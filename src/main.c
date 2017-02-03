@@ -21,13 +21,25 @@ uint32_t read_shred(void) {
   int i = 0;
   uint8_t buf[64] = {0};
   FILE *gpio = NULL;
+  log("Opening /sys/class/gpio/export\n");
   FILE *export = fopen("/sys/class/gpio/export", "w");
+  if (export == NULL) {
+    err("Failed to open /sys/class/gpio/export\n");
+    return val;
+  }
   for (i=0;i<SHRED_NGPIO;i++) {
     ret = sprintf(buf, "%i\n", i+SHRED_GPIO_BASE);
+    log("Exporting pin %s\n", buf);
     fwrite(buf, sizeof(char), ret, export);
     usleep(100);
     sprintf(buf, "/sys/class/gpio/gpio%i", i+SHRED_GPIO_BASE);
+    log("Opening %s\n", buf);
     gpio = fopen(buf, "r");
+    if (gpio == NULL) {
+      err("Failed to open %s\n", buf);
+      fclose(export);
+      return val;
+    }
     ret = fscanf(gpio, "%i", &val);
     log("gpio[%i] read returned %i, value: %i\n", i+SHRED_GPIO_BASE, ret, val);
     fclose(gpio);
