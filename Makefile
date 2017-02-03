@@ -1,8 +1,9 @@
 CROSS_COMPILE ?=
+CROSS_ROOT?=
 PREFIX ?= .
 CC = $(CROSS_COMPILE)gcc
-CFLAGS = -Wall
-LDFLAGS = -lpanelw -lncursesw -ltinfo
+CFLAGS = -Wall -I$(CROSS_ROOT)/usr/include
+LDFLAGS = -L$(CROSS_ROOT)/usr/lib -lpanelw -lncursesw -ltinfo
 REAL_DEVICES ?= no
 FAKE_ID = 0x80000002
 
