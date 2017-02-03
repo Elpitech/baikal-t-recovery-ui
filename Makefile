@@ -32,6 +32,6 @@ clean:
 
 .PHONY: install
 install:
-ifneq($(PREFIX),.)
+ifneq ($(PREFIX),.)
 	cp $(PROJECT) $(PREFIX)
 endif
