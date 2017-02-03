@@ -1,7 +1,8 @@
-CROSS_COMPILE?=
+CROSS_COMPILE ?=
+PREFIX ?= .
 CC = $(CROSS_COMPILE)gcc
 CFLAGS = -Wall
-LDFLAGS = -lpanelw $(shell pkg-config ncursesw --libs)
+LDFLAGS = -lpanelw -lncursesw -ltinfo
 REAL_DEVICES ?= no
 FAKE_ID = 0x80000002
 
@@ -12,7 +13,7 @@ CFLAGS += -DFAKE_ID=$(FAKE_ID)
 endif
 
 CFLAGS += -D_XOPEN_SOURCE_EXTENDED
-CFLAFS += $(shell pkg-config ncursesw --cflags)
+CFLAFS += -D_GNU_SOURCE -D_DEFAULT_SOURCE -I/usr/include/ncursesw
 SOURCES = src/main.c
 OBJECTS = $(patsubst %.c, %.o, $(SOURCES))
 PROJECT = recovery-ui
@@ -28,3 +29,9 @@ $(PROJECT): $(OBJECTS)
 .PHONY: clean
 clean:
 	rm $(OBJECTS) $(PROJECT)
+
+.PHONY: install
+install:
+ifneq($(PREFIX),.)
+	cp $(PROJECT) $(PREFIX)
+endif
