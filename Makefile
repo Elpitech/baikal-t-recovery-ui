@@ -3,7 +3,7 @@ CROSS_ROOT?=
 PREFIX ?= .
 CC = $(CROSS_COMPILE)gcc
 CFLAGS = -Wall -I$(CROSS_ROOT)/usr/include
-LDFLAGS = -L$(CROSS_ROOT)/usr/lib -lpanelw -lncursesw -ltinfow
+LDFLAGS = -L$(CROSS_ROOT)/usr/lib -lpanelw -lncursesw -ltinfow -lmenuw
 REAL_DEVICES ?= no
 FAKE_SHRED = 0x80000002
 
