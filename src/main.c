@@ -20,33 +20,33 @@ uint32_t read_shred(void) {
   uint32_t shred_val = 0;
   int i = 0;
   uint8_t buf[64] = {0};
-  FILE *gpio = NULL;
-  log("Opening /sys/class/gpio/export\n");
-  FILE *export = fopen("/sys/class/gpio/export", "w");
-  if (export == NULL) {
-    err("Failed to open /sys/class/gpio/export\n");
-    return val;
-  }
   for (i=0;i<SHRED_NGPIO;i++) {
-    ret = sprintf(buf, "%i\n", i+SHRED_GPIO_BASE);
-    log("Exporting pin %s\n", buf);
+    log("Opening /sys/class/gpio/export\n");
+    FILE *export = fopen("/sys/class/gpio/export", "w");
+    if (export == NULL) {
+      err("Failed to open /sys/class/gpio/export\n");
+      return val;
+    }
+    ret = sprintf(buf, "%i", i+SHRED_GPIO_BASE);
+    log("Exporting pin %s[len: %i]\n", buf, ret);
     fwrite(buf, sizeof(char), ret, export);
-    usleep(100);
-    sprintf(buf, "/sys/class/gpio/gpio%i", i+SHRED_GPIO_BASE);
+    fclose(export);
+    sprintf(buf, "/sys/class/gpio/gpio%i/value", i+SHRED_GPIO_BASE);
     log("Opening %s\n", buf);
-    gpio = fopen(buf, "r");
+    FILE *gpio = fopen(buf, "r");
     if (gpio == NULL) {
       err("Failed to open %s\n", buf);
       fclose(export);
-      return val;
+      return shred_val;
     }
     ret = fscanf(gpio, "%i", &val);
     log("gpio[%i] read returned %i, value: %i\n", i+SHRED_GPIO_BASE, ret, val);
+    shred_val |= (val!=0?(1<<i):0);
     fclose(gpio);
   }
-  fclose(export);
+  return shred_val;
 #else
-  return FAKE_ID;
+  return FAKE_SHRED;
 #endif
 }
 

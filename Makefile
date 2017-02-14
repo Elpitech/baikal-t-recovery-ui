@@ -5,12 +5,12 @@ CC = $(CROSS_COMPILE)gcc
 CFLAGS = -Wall -I$(CROSS_ROOT)/usr/include
 LDFLAGS = -L$(CROSS_ROOT)/usr/lib -lpanelw -lncursesw -ltinfow
 REAL_DEVICES ?= no
-FAKE_ID = 0x80000002
+FAKE_SHRED = 0x80000002
 
 ifeq ($(REAL_DEVICES),yes)
 CFLAGS += -DREAL_DEVICES
 else
-CFLAGS += -DFAKE_ID=$(FAKE_ID)
+CFLAGS += -DFAKE_SHRED=$(FAKE_SHRED)
 endif
 
 CFLAGS += -D_XOPEN_SOURCE_EXTENDED
