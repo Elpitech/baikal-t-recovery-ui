@@ -12,9 +12,11 @@
 #include "common.h"
 #include "main_page.h"
 #include "top_menu.h"
+#include "fru.h"
+
 #define TAG "MAIN_PAGE"
 
-#define LABEL_WIDTH 20
+#define LABEL_WIDTH 32
 
 enum fields {
   TIME_LABEL = 0,
@@ -23,6 +25,24 @@ enum fields {
   DATE_VAL,
   SHRED_LABEL,
   SHRED_VAL,
+  BRD_MFG_NAME_LABEL,
+  BRD_MFG_NAME_VAL,
+  BRD_PRODUCT_NAME_LABEL,
+  BRD_PRODUCT_NAME_VAL,
+  BRD_SERIAL_LABEL,
+  BRD_SERIAL_VAL,
+  BRD_PN_LABEL,
+  BRD_PN_VAL,
+  BRD_FRU_GENERATOR_VERSION_LABEL,
+  BRD_FRU_GENERATOR_VERSION_VAL,
+  
+  PRODUCT_MFG_LABEL,
+  PRODUCT_MFG_VAL,
+  PART_MODEL_NUMBER_LABEL,
+  PART_MODEL_NUMBER_VAL,
+  PRODUCT_SERIAL_LABEL,
+  PRODUCT_SERIAL_VAL,
+  
   NULL_VAL,
   N_FIELDS=NULL_VAL
 };
@@ -65,17 +85,42 @@ init_main_page(void) {
   t = time(NULL);
   tm = *localtime(&t);
 
-  main_page.fields[TIME_LABEL] = mk_label(LABEL_WIDTH, 0, TIME_LABEL, "TIME", PAGE_COLOR);
+  main_page.fields[TIME_LABEL] = mk_label(LABEL_WIDTH, 0, TIME_LABEL, "Time", PAGE_COLOR);
   sprintf(main_page.time_label, "%02i:%02i:%02i", tm.tm_hour, tm.tm_min, tm.tm_sec);
 	main_page.fields[TIME_VAL] = mk_label(LABEL_WIDTH, LABEL_WIDTH, TIME_LABEL, main_page.time_label, PAGE_COLOR);
 
-  main_page.fields[DATE_LABEL] = mk_label(LABEL_WIDTH, 0, DATE_LABEL, "DATE", PAGE_COLOR);
+  main_page.fields[DATE_LABEL] = mk_label(LABEL_WIDTH, 0, DATE_LABEL, "Date", PAGE_COLOR);
   sprintf(main_page.date_label, "%02i-%02i-%04i", tm.tm_mday, tm.tm_mon+1, tm.tm_year + 1900);
 	main_page.fields[DATE_VAL] = mk_label(LABEL_WIDTH, LABEL_WIDTH, DATE_LABEL, main_page.date_label, PAGE_COLOR);
 
   main_page.fields[SHRED_LABEL] = mk_label(LABEL_WIDTH, 0, SHRED_LABEL, "SHRED", PAGE_COLOR);
   sprintf(main_page.shred_label, "0x%08x", main_page.shred);
 	main_page.fields[SHRED_VAL] = mk_label(LABEL_WIDTH, LABEL_WIDTH, SHRED_LABEL, main_page.shred_label, PAGE_COLOR);
+
+  main_page.fields[BRD_MFG_NAME_LABEL] = mk_label(LABEL_WIDTH, 0, BRD_MFG_NAME_LABEL, "Board manufacturer", PAGE_COLOR);
+	main_page.fields[BRD_MFG_NAME_VAL] = mk_label(LABEL_WIDTH, LABEL_WIDTH, BRD_MFG_NAME_LABEL, fru.val_mfg_name, PAGE_COLOR);
+
+  main_page.fields[BRD_PRODUCT_NAME_LABEL] = mk_label(LABEL_WIDTH, 0, BRD_PRODUCT_NAME_LABEL, "Board product name", PAGE_COLOR);
+	main_page.fields[BRD_PRODUCT_NAME_VAL] = mk_label(LABEL_WIDTH, LABEL_WIDTH, BRD_PRODUCT_NAME_LABEL, fru.val_product_name, PAGE_COLOR);
+
+  main_page.fields[BRD_SERIAL_LABEL] = mk_label(LABEL_WIDTH, 0, BRD_SERIAL_LABEL, "Board serial number", PAGE_COLOR);
+	main_page.fields[BRD_SERIAL_VAL] = mk_label(LABEL_WIDTH, LABEL_WIDTH, BRD_SERIAL_LABEL, fru.val_serial_number, PAGE_COLOR);
+
+  main_page.fields[BRD_PN_LABEL] = mk_label(LABEL_WIDTH, 0, BRD_PN_LABEL, "Board part number", PAGE_COLOR);
+	main_page.fields[BRD_PN_VAL] = mk_label(LABEL_WIDTH, LABEL_WIDTH, BRD_PN_LABEL, fru.val_part_number, PAGE_COLOR);
+
+  main_page.fields[BRD_FRU_GENERATOR_VERSION_LABEL] = mk_label(LABEL_WIDTH, 0, BRD_FRU_GENERATOR_VERSION_LABEL, "FRU Generator version", PAGE_COLOR);
+	main_page.fields[BRD_FRU_GENERATOR_VERSION_VAL] = mk_label(LABEL_WIDTH, LABEL_WIDTH, BRD_FRU_GENERATOR_VERSION_LABEL, fru.val_fru_id, PAGE_COLOR);
+
+  main_page.fields[PRODUCT_MFG_LABEL] = mk_label(LABEL_WIDTH, 0, PRODUCT_MFG_LABEL, "Product manufacturer", PAGE_COLOR);
+	main_page.fields[PRODUCT_MFG_VAL] = mk_label(LABEL_WIDTH, LABEL_WIDTH, PRODUCT_MFG_LABEL, fru.val_p_product_mfg, PAGE_COLOR);
+
+  main_page.fields[PART_MODEL_NUMBER_LABEL] = mk_label(LABEL_WIDTH, 0, PART_MODEL_NUMBER_LABEL, "Part model number", PAGE_COLOR);
+	main_page.fields[PART_MODEL_NUMBER_VAL] = mk_label(LABEL_WIDTH, LABEL_WIDTH, PART_MODEL_NUMBER_LABEL, fru.val_p_product_name, PAGE_COLOR);
+
+  main_page.fields[PRODUCT_SERIAL_LABEL] = mk_label(LABEL_WIDTH, 0, PRODUCT_SERIAL_LABEL, "Product serial number", PAGE_COLOR);
+	main_page.fields[PRODUCT_SERIAL_VAL] = mk_label(LABEL_WIDTH, LABEL_WIDTH, PRODUCT_SERIAL_LABEL, fru.val_p_part_model_number, PAGE_COLOR);
+  
   main_page.fields[NULL_VAL] = NULL;
   
   main_page.f = new_form(main_page.fields);

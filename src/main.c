@@ -9,6 +9,7 @@
 #include "common.h"
 #include "top_menu.h"
 #include "main_page.h"
+#include "fru.h"
 
 #define SHRED_GPIO_BASE 32
 #define SHRED_NGPIO 8
@@ -65,7 +66,8 @@ int main(void) {
   log("Started log\n");
   
   //setlocale(LC_ALL, "ru_RU.UTF-8");
-
+  log("Parse FRU\n");
+  fru_open_parse();
 	initscr();			/* Start curses mode 		*/
   log("Start color\n");
   start_color();
@@ -96,9 +98,9 @@ int main(void) {
   //doupdate();
 	while(esc <= 2) {
     ch = wgetch(stdscr);
-    log("CH: 0x%08x\n", ch);
     if ((ch != ERR) && (ch != 0x1b)) {
       esc = 0;
+      log("CH: 0x%08x\n", ch);
     }
     switch (ch) {
     case 0x1b: // escape
