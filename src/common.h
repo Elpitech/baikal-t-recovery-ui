@@ -3,6 +3,7 @@
 
 #define PAGE_LABEL_COLOR COLOR_PAIR(1)
 #define PAGE_COLOR COLOR_PAIR(2)
+#define BG_COLOR COLOR_PAIR(3)
 
 extern FILE *logfile;
 #define log(...) {fprintf (logfile, "L["TAG"]: "__VA_ARGS__); fflush(logfile); }

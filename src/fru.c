@@ -1,6 +1,7 @@
 #include "fru.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define FRU_VERSION 1
 #define BOARD_AREA_VERSION 1
@@ -25,15 +26,15 @@ uint8_t
 calc_cs(uint8_t *buf, uint8_t size) {
   uint8_t cs = 0;
   int i = 0;
-  //fprintf(logfile, "CS:\n");
+  fprintf(logfile, "CS:\n");
   for (;i<size; i++) {
     cs += buf[i];
-    //if (i%8==0) {
-      //fprintf(logfile, "\n");
-    //}
-    //fprintf(logfile, "0x%02x ", cs);
+    if (i%8==0) {
+      fprintf(logfile, "\n");
+    }
+    fprintf(logfile, "0x%02x ", cs);
   }
-  //printf(logfile, "\n");
+  fprintf(logfile, "\n");
   return cs;
 }
 
@@ -127,6 +128,8 @@ parse_product_area(struct fru *f, uint8_t *buf, unsigned int buf_len) {
 
 int
 fru_parse_multirecord(struct multirec *m, uint8_t *buf, unsigned int buf_len) {
+  int i = 0;
+  uint8_t data_cs;
   if (buf_len<5) {
     warn("FRU: no space in multirecord buffer, failed to parse header\n");
     return -4;
@@ -153,8 +156,18 @@ fru_parse_multirecord(struct multirec *m, uint8_t *buf, unsigned int buf_len) {
     warn("FRU: no space in multirecord buffer, failed check data\n");
     return -5;
   }
-  if (calc_cs(&buf[5], m->length) != 0) {
-    warn("FRU: multirecord[%i] data checksum is invalid\n");
+  log("FRU mrec bin:\n");
+  for (;i<(m->length+5);i++) {
+    if ((i%8)==0) {
+      fprintf(logfile, "\n");
+    }
+    fprintf(logfile, "0x%02x[%c] ", buf[i], (buf[i]>' '?buf[i]:' '));
+  }
+  fprintf(logfile, "\n");
+
+  data_cs = calc_cs(&buf[5], m->length)+buf[3];
+  if (data_cs != 0) {
+    warn("FRU: multirecord data checksum is invalid [0x%02x]\n", data_cs);
     return -3;
   }
   m->data = &buf[5];
@@ -195,12 +208,13 @@ parse_fru(struct fru *f, uint8_t *buf, unsigned int buf_len) {
   }
   f->mrec_count = 0;
   while (ret >= 0) {
-    ret = fru_parse_multirec(&f->mrec[mrec_n], &buf[mrec_area_offset], buf_len-mrec_are_offset);
+    log("FRU: parsing multirecord %i\n", f->mrec_count);
+    ret = fru_parse_multirecord(&f->mrec[mrec_n], &buf[mrec_area_offset], buf_len-mrec_area_offset);
     if (ret > 0) {
       f->mrec_count ++;
     }
     if ((ret > 0) && (f->mrec[mrec_n].end == false)) {
-      mrec_are_offset = ret;
+      mrec_area_offset = ret;
     } else {
       break;
     }
@@ -221,10 +235,10 @@ fru_open_parse(void) {
   ret = fread(fru_buf, sizeof(uint8_t), FRU_SIZE, f);
   log("Read %i bytes\n", ret);
   parse_fru(&fru, fru_buf, FRU_SIZE);
-  for (i=0; i<f->mrec_count; i++) {
-    if (f->mrec[i].type == MR_MAC_REC) {
-      memcpy(f->mac, f->mrec[i].data, 6);
-      log("FRU: found MAC mrec [%02x %02x %02x %02x %02x %02x]\n", f->mac[0], f->mac[1], f->mac[2], f->mac[3], f->mac[4], f->mac[5]);
+  for (i=0; i<fru.mrec_count; i++) {
+    if (fru.mrec[i].type == MR_MAC_REC) {
+      memcpy(fru.mac, fru.mrec[i].data, 6);
+      log("FRU: found MAC mrec [%02x %02x %02x %02x %02x %02x]\n", fru.mac[0], fru.mac[1], fru.mac[2], fru.mac[3], fru.mac[4], fru.mac[5]);
       break;
     }
   }

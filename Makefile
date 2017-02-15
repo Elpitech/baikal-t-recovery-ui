@@ -17,7 +17,7 @@ endif
 
 CFLAGS += -D_XOPEN_SOURCE_EXTENDED
 CFLAFS += -D_GNU_SOURCE -D_DEFAULT_SOURCE -I/usr/include/ncursesw
-SOURCES = src/main.c src/top_menu.c src/main_page.c src/fru.c
+SOURCES = src/main.c src/top_menu.c src/main_page.c src/boot_page.c src/net_page.c src/fru.c
 OBJECTS = $(patsubst %.c, %.o, $(SOURCES))
 PROJECT = recovery-ui
 

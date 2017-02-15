@@ -9,6 +9,7 @@
 #include "common.h"
 #include "top_menu.h"
 #include "main_page.h"
+#include "pages.h"
 #include "fru.h"
 
 #define SHRED_GPIO_BASE 32
@@ -16,6 +17,7 @@
 #define TAG "MAIN"
 
 FILE *logfile;
+struct pages page_params;
 
 void win_show(WINDOW *win, wchar_t *label, int label_color);
 void print_in_middle(WINDOW *win, int starty, int startx, int width, wchar_t *string, chtype color);
@@ -78,6 +80,7 @@ int main(void) {
   nodelay(stdscr, TRUE);
   init_pair(1, COLOR_BLACK, COLOR_WHITE);
   init_pair(2, COLOR_BLUE, COLOR_WHITE);
+  init_pair(3, COLOR_WHITE, COLOR_BLUE);
   log("Init done\n");
 
   //getmaxyx(NULL, max_y, max_x);
@@ -93,8 +96,13 @@ int main(void) {
   /* swprintf(label, 80, L"SETTINGS"); */
   /* win_show(windows[0], label, 1); */
   
-  init_top_menu();
   init_main_page();
+  init_boot_page();
+  init_net_page();
+  init_top_menu(get_main_page_wp(), get_boot_page_wp(), get_net_page_wp());
+  hide_all_panels_except(get_main_page_wp());
+  update_panels();
+  //page_params.exclusive = -1;
   //doupdate();
 	while(esc <= 2) {
     ch = wgetch(stdscr);
@@ -117,9 +125,16 @@ int main(void) {
     if (main_page_process(ch)!=0) {
       continue;
     }
+    if (net_page_process(ch)!=0) {
+      continue;
+    }
+    if (boot_page_process(ch)!=0) {
+      continue;
+    }
+
     //refresh();
     //wrefresh(windows[0]);
-    //update_panels();
+    update_panels();
     doupdate();
     
   }
@@ -128,6 +143,8 @@ int main(void) {
   //free_menu(my_menu);
   //for(i = 0; i < 3; i++)
   //free_item(my_items[i]);
+  deinit_net_page();
+  deinit_boot_page();
   deinit_main_page();
   deinit_top_menu();
 	endwin();			/* End curses mode		  */

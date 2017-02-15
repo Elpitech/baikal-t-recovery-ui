@@ -2,6 +2,7 @@
 #define __FRU_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define MR_MAC_REC 0xC0
 #define MR_UBOOT_REC 0xC1
@@ -25,7 +26,7 @@ struct multirec {
   uint8_t *data;
 };
 
-struct fru {  
+struct fru {
   uint8_t mac[6];
   uint8_t mfg_date[3];
   FRU_STR(mfg_name, FRU_STR_MAX);

@@ -10,6 +10,7 @@
 #include <time.h>
 
 #include "common.h"
+#include "pages.h"
 #include "main_page.h"
 #include "top_menu.h"
 #include "fru.h"
@@ -48,6 +49,7 @@ enum fields {
 };
 
 static struct {
+  struct window_params wp;
   WINDOW *w;
   WINDOW *sw;
   uint32_t shred;
@@ -68,16 +70,30 @@ mk_label(int w, int x, int y, char *string, chtype c) {
   return f;
 }
 
+FIELD *
+mk_editable_field_regex(int w, int x, int y, char *string, char *regex, chtype c) {
+  FIELD *f = new_field(1, w, y, x, 0, 0);
+  //field_opts_off(f, O_EDIT);
+  set_field_type(f, TYPE_REGEXP, regex);
+  set_field_opts(f, O_VISIBLE | O_PUBLIC | O_EDIT | O_ACTIVE);
+  set_field_buffer(f, 0, string);
+  //set_field_fore(f, c);
+  //set_field_back(f, c);
+  return f;
+}
+
 void
 init_main_page(void) {
   int width, height;
   time_t t;
   struct tm tm;
-  main_page.w = newwin(LINES-TOP_MENU_H,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
-  box(main_page.w, 0, 0);
-  wbkgd(main_page.w, PAGE_COLOR);
+  main_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
+  box(main_page.wp.w, 0, 0);
+  wbkgd(main_page.wp.w, PAGE_COLOR);
 
-  getmaxyx(main_page.w, height, width);
+  main_page.wp.p = new_panel(main_page.wp.w);
+
+  getmaxyx(main_page.wp.w, height, width);
   (void)height;
 
   main_page.shred = read_shred();
@@ -125,8 +141,8 @@ init_main_page(void) {
   
   main_page.f = new_form(main_page.fields);
   scale_form(main_page.f, &height, &width);
-  set_form_win(main_page.f, main_page.w);
-  main_page.sw = derwin(main_page.w, height, width, 2, 2);
+  set_form_win(main_page.f, main_page.wp.w);
+  main_page.sw = derwin(main_page.wp.w, height, width, 2, 2);
   set_form_sub(main_page.f, main_page.sw);
 
   post_form(main_page.f);
@@ -134,28 +150,30 @@ init_main_page(void) {
 
   
   /* swprintf(main_page.shred_label, 20, L"0x%08x", main_page.shred); */
-  /* label(main_page.w, 2, 2, L"SHRED", PAGE_LABEL_COLOR); */
-  /* label(main_page.w, 2, 10, main_page.shred_label, PAGE_COLOR); */
+  /* label(main_page.wp.w, 2, 2, L"SHRED", PAGE_LABEL_COLOR); */
+  /* label(main_page.wp.w, 2, 10, main_page.shred_label, PAGE_COLOR); */
 
-  /* label(main_page.w, 2, 2, L"SHRED", PAGE_LABEL_COLOR); */
-  /* label(main_page.w, 2, 10, main_page.shred_label, PAGE_COLOR); */
+  /* label(main_page.wp.w, 2, 2, L"SHRED", PAGE_LABEL_COLOR); */
+  /* label(main_page.wp.w, 2, 10, main_page.shred_label, PAGE_COLOR); */
 
-  redrawwin(main_page.w);
-	//wnoutrefresh(main_page.w);
+  redrawwin(main_page.wp.w);
+	//wnoutrefresh(main_page.wp.w);
   //win_show(, label, 1);
 }
 
 int
 main_page_process(int ch) {
-  time_t t = time(NULL);
-  struct tm tm = *localtime(&t);
-
-  sprintf(main_page.time_label, "%02i:%02i:%02i", tm.tm_hour, tm.tm_min, tm.tm_sec);
-  set_field_buffer(main_page.fields[TIME_VAL], 0, main_page.time_label);
-  //redrawwin(main_page.sw);
-  //redrawwin(main_page.w);
-  //wnoutrefresh(main_page.sw);
-	wnoutrefresh(main_page.w);
+  if (!main_page.wp.hidden) {
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    
+    sprintf(main_page.time_label, "%02i:%02i:%02i", tm.tm_hour, tm.tm_min, tm.tm_sec);
+    set_field_buffer(main_page.fields[TIME_VAL], 0, main_page.time_label);
+    //redrawwin(main_page.sw);
+    //redrawwin(main_page.wp.w);
+    //wnoutrefresh(main_page.sw);
+    wnoutrefresh(main_page.wp.w);
+  }
   return 0;
 }
 
@@ -166,5 +184,10 @@ deinit_main_page(void) {
 	free_form(main_page.f);
   for (i=0; i<N_FIELDS; i++)
     free_field(main_page.fields[i]);
-  delwin(main_page.w);
+  delwin(main_page.wp.w);
+}
+
+struct window_params *
+get_main_page_wp(void) {
+  return &main_page.wp;
 }
