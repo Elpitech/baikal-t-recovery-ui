@@ -19,7 +19,7 @@
 
 #define LABEL_WIDTH 32
 
-enum fields {
+enum mac_fields {
   MAC_LABEL = 0,
   MAC0_VAL,
   MAC1_VAL,
@@ -33,7 +33,6 @@ enum fields {
 
 static struct {
   struct window_params wp;
-  WINDOW *w;
   WINDOW *sw;
   uint32_t shred;
   uint8_t mac_val[LABEL_WIDTH];
@@ -58,7 +57,7 @@ init_net_page(void) {
   memset(net_page.mac_val, 0, LABEL_WIDTH);
   for (;i<6; i++) {
     sprintf(net_page.mac_val+3*i, "%02x", fru.mac[i]);
-    net_page.fields[MAC0_VAL+i] = mk_editable_field_regex(2, LABEL_WIDTH+3*i, MAC_LABEL, net_page.mac_val+3*i, "[0-9a-zA-Z][0-9a-zA-Z]", PAGE_COLOR);
+    net_page.fields[MAC0_VAL+i] = mk_editable_field_regex(2, LABEL_WIDTH+3*i, MAC_LABEL, net_page.mac_val+3*i, "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR);
   }
 
   net_page.fields[NULL_VAL] = NULL;
@@ -80,17 +79,36 @@ int
 net_page_process(int ch) {
   if (!net_page.wp.hidden) {
     switch (ch) {
-    case KEY_DOWN:
-      //if (page_params.exclusive == P_NET) {
+    case KEY_RIGHT:
+      if (pages_params.exclusive == P_NET) {
         form_driver(net_page.f, REQ_NEXT_FIELD);
-        form_driver(net_page.f, REQ_END_LINE);
-        //}
+        //form_driver(net_page.f, REQ_END_LINE);
+      }
       break;
-    case KEY_UP:
-      //if (page_params.exclusive == P_NET) {
+    case KEY_LEFT:
+      if (pages_params.exclusive == P_NET) {
         form_driver(net_page.f, REQ_PREV_FIELD);
-        form_driver(net_page.f, REQ_END_LINE);
-        //}
+        //form_driver(net_page.f, REQ_END_LINE);
+      }
+      break;
+		case KEY_BACKSPACE:
+		case 127:
+      if (pages_params.exclusive == P_NET) {
+        form_driver(net_page.f, REQ_DEL_PREV);
+      }
+      break;
+    case KEY_DC:
+      if (pages_params.exclusive == P_NET) {
+        form_driver(net_page.f, REQ_DEL_CHAR);
+      }
+			break;
+    case RKEY_ENTER://KEY_ENTER:
+      pages_params.exclusive = P_NET;
+      log("Set exclusive [%i]\n", pages_params.exclusive);
+      break;
+    case RKEY_ESC:
+      pages_params.exclusive = P_NONE;
+      log("Set exclusive [%i]\n", pages_params.exclusive);
       break;
     default:
       form_driver(net_page.f, ch);

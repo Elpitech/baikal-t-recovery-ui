@@ -73,12 +73,13 @@ mk_label(int w, int x, int y, char *string, chtype c) {
 FIELD *
 mk_editable_field_regex(int w, int x, int y, char *string, char *regex, chtype c) {
   FIELD *f = new_field(1, w, y, x, 0, 0);
-  //field_opts_off(f, O_EDIT);
+  set_max_field(f, w);
   set_field_type(f, TYPE_REGEXP, regex);
-  set_field_opts(f, O_VISIBLE | O_PUBLIC | O_EDIT | O_ACTIVE);
+  set_field_opts(f, O_VISIBLE | O_PUBLIC | O_EDIT | O_ACTIVE | O_AUTOSKIP | O_BLANK);
+  //field_opts_off(f, O_AUTOSKIP);
   set_field_buffer(f, 0, string);
-  //set_field_fore(f, c);
-  //set_field_back(f, c);
+  set_field_fore(f, c);
+  set_field_back(f, A_UNDERLINE);
   return f;
 }
 

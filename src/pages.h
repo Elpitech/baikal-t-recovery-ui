@@ -8,7 +8,8 @@ struct window_params {
 };
 
 enum PAGES {
-  P_MAIN = 0,
+  P_NONE = 0,
+  P_MAIN,
   P_BOOT,
   P_NET
 };

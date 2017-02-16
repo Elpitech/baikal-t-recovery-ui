@@ -17,7 +17,7 @@
 #define TAG "MAIN"
 
 FILE *logfile;
-struct pages page_params;
+struct pages pages_params;
 
 void win_show(WINDOW *win, wchar_t *label, int label_color);
 void print_in_middle(WINDOW *win, int starty, int startx, int width, wchar_t *string, chtype color);
@@ -102,34 +102,37 @@ int main(void) {
   init_top_menu(get_main_page_wp(), get_boot_page_wp(), get_net_page_wp());
   hide_all_panels_except(get_main_page_wp());
   update_panels();
-  //page_params.exclusive = -1;
+  pages_params.exclusive = P_NONE;
   //doupdate();
 	while(esc <= 2) {
     ch = wgetch(stdscr);
-    if ((ch != ERR) && (ch != 0x1b)) {
-      esc = 0;
+    if (ch != ERR) {
       log("CH: 0x%08x\n", ch);
+      if (ch != RKEY_ESC) {
+        esc = 0;
+      } else {
+        esc ++;
+      }
     }
-    switch (ch) {
-    case 0x1b: // escape
-      esc ++;
-      break;
-    case 9:
-      top = (PANEL *)panel_userptr(top);
-      top_panel(top);
-      break;
+    if (pages_params.exclusive == P_NONE) {
+      if (top_menu_process(ch)!=0) {
+        continue;
+      }
     }
-    if (top_menu_process(ch)!=0) {
-      continue;
+    if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_MAIN)) {
+      if (main_page_process(ch)!=0) {
+        continue;
+      }
     }
-    if (main_page_process(ch)!=0) {
-      continue;
+    if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_NET)) {
+      if (net_page_process(ch)!=0) {
+        continue;
+      }
     }
-    if (net_page_process(ch)!=0) {
-      continue;
-    }
-    if (boot_page_process(ch)!=0) {
-      continue;
+    if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_BOOT)) {
+      if (boot_page_process(ch)!=0) {
+        continue;
+      }
     }
 
     //refresh();
