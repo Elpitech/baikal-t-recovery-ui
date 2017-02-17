@@ -4,6 +4,7 @@
 #define PAGE_LABEL_COLOR COLOR_PAIR(1)
 #define PAGE_COLOR COLOR_PAIR(2)
 #define BG_COLOR COLOR_PAIR(3)
+#define FIELD_COLOR COLOR_PAIR(4)
 
 #define RKEY_ENTER 0x0a
 #define RKEY_ESC   0x1b

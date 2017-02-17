@@ -18,6 +18,7 @@
 
 FILE *logfile;
 struct pages pages_params;
+struct fru fru_back;
 
 void win_show(WINDOW *win, wchar_t *label, int label_color);
 void print_in_middle(WINDOW *win, int starty, int startx, int width, wchar_t *string, chtype color);
@@ -70,6 +71,7 @@ int main(void) {
   //setlocale(LC_ALL, "ru_RU.UTF-8");
   log("Parse FRU\n");
   fru_open_parse();
+  memcpy(&fru_back, &fru, sizeof(struct fru));
 	initscr();			/* Start curses mode 		*/
   log("Start color\n");
   start_color();
@@ -81,6 +83,7 @@ int main(void) {
   init_pair(1, COLOR_BLACK, COLOR_WHITE);
   init_pair(2, COLOR_BLUE, COLOR_WHITE);
   init_pair(3, COLOR_WHITE, COLOR_BLUE);
+  init_pair(4, COLOR_BLACK, COLOR_BLACK);
   log("Init done\n");
 
   //getmaxyx(NULL, max_y, max_x);

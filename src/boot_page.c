@@ -20,8 +20,8 @@
 #define LABEL_WIDTH 32
 
 enum fields {
-  BOOT_LABEL = 0,
-  BOOT_VAL,
+  BOOT_DEVICE_LABEL = 0,
+  BOOT_DEVICE_VAL,
   NULL_VAL,
   N_FIELDS=NULL_VAL
 };
@@ -53,8 +53,8 @@ init_boot_page(void) {
   t = time(NULL);
   tm = *localtime(&t);
 
-  boot_page.fields[BOOT_LABEL] = mk_label(LABEL_WIDTH, 0, BOOT_LABEL, "BOOT", PAGE_COLOR);
-	boot_page.fields[BOOT_VAL] = mk_label(LABEL_WIDTH, LABEL_WIDTH, BOOT_LABEL, "BOOT", PAGE_COLOR);
+  boot_page.fields[BOOT_DEVICE_LABEL] = mk_label(LABEL_WIDTH, 0, BOOT_DEVICE_LABEL, "Bootdevice", PAGE_COLOR);
+	boot_page.fields[BOOT_DEVICE_VAL] = mk_editable_field_regex(16, LABEL_WIDTH, BOOT_DEVICE_LABEL, fru.bootdevice, ".*", BG_COLOR);
   boot_page.fields[NULL_VAL] = NULL;
   
   boot_page.f = new_form(boot_page.fields);
@@ -73,6 +73,43 @@ init_boot_page(void) {
 int
 boot_page_process(int ch) {
   if (!boot_page.wp.hidden) {
+    switch (ch) {
+    case KEY_RIGHT:
+      if (pages_params.exclusive == P_BOOT) {
+        form_driver(boot_page.f, REQ_NEXT_FIELD);
+        //form_driver(net_page.f, REQ_END_LINE);
+      }
+      break;
+    case KEY_LEFT:
+      if (pages_params.exclusive == P_BOOT) {
+        form_driver(boot_page.f, REQ_PREV_FIELD);
+        //form_driver(net_page.f, REQ_END_LINE);
+      }
+      break;
+		case KEY_BACKSPACE:
+		case 127:
+      if (pages_params.exclusive == P_BOOT) {
+        form_driver(boot_page.f, REQ_DEL_PREV);
+      }
+      break;
+    case KEY_DC:
+      if (pages_params.exclusive == P_BOOT) {
+        form_driver(boot_page.f, REQ_DEL_CHAR);
+      }
+			break;
+    case RKEY_ENTER://KEY_ENTER:
+      pages_params.exclusive = P_BOOT;
+      log("Set exclusive [%i]\n", pages_params.exclusive);
+      break;
+    case RKEY_ESC:
+      pages_params.exclusive = P_NONE;
+      log("Set exclusive [%i]\n", pages_params.exclusive);
+      break;
+    default:
+      form_driver(boot_page.f, ch);
+      break;
+    }
+
     wnoutrefresh(boot_page.wp.w);
   }
   return 0;

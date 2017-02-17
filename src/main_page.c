@@ -79,7 +79,7 @@ mk_editable_field_regex(int w, int x, int y, char *string, char *regex, chtype c
   //field_opts_off(f, O_AUTOSKIP);
   set_field_buffer(f, 0, string);
   set_field_fore(f, c);
-  set_field_back(f, A_UNDERLINE);
+  set_field_back(f, c);
   return f;
 }
 
