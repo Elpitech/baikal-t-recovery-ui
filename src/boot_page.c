@@ -54,7 +54,7 @@ init_boot_page(void) {
   tm = *localtime(&t);
 
   boot_page.fields[BOOT_DEVICE_LABEL] = mk_label(LABEL_WIDTH, 0, BOOT_DEVICE_LABEL, "Bootdevice", PAGE_COLOR);
-	boot_page.fields[BOOT_DEVICE_VAL] = mk_editable_field_regex(16, LABEL_WIDTH, BOOT_DEVICE_LABEL, fru.bootdevice, ".*", BG_COLOR);
+	boot_page.fields[BOOT_DEVICE_VAL] = mk_editable_field_regex(16, LABEL_WIDTH, BOOT_DEVICE_LABEL, fru.bootdevice, "[/A-Za-z0-9]+", BG_COLOR);
   boot_page.fields[NULL_VAL] = NULL;
   
   boot_page.f = new_form(boot_page.fields);
@@ -72,7 +72,19 @@ init_boot_page(void) {
 
 void
 boot_save_bootdev(void) {
+  log("Save boot device\n");
   char *ptr = field_buffer(boot_page.fields[BOOT_DEVICE_VAL], 0);
+  int i = 0;
+  msg("PTR:\n");
+  for (;i<16;i++) {
+    msg("%02x ", ptr[i]);
+    if (ptr[i] == ' ') {
+      ptr[i] = '\0';
+      break;
+    }
+  }
+  msg("\n");
+  log("Obtained buffer: [%s]\n", ptr);
   //int len = strlen(ptr);
   //memcpy(fru.bootdevice, ptr, (len>FRU_STR_MAX?FRU_STR_MAX:len));
   fru_mrec_update_bootdevice(&fru, ptr);
