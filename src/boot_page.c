@@ -70,6 +70,14 @@ init_boot_page(void) {
   //win_show(, label, 1);
 }
 
+void
+boot_save_bootdev(void) {
+  char *ptr = field_buffer(boot_page.fields[BOOT_DEVICE_VAL], 0);
+  //int len = strlen(ptr);
+  //memcpy(fru.bootdevice, ptr, (len>FRU_STR_MAX?FRU_STR_MAX:len));
+  fru_mrec_update_bootdevice(&fru, ptr);
+}
+
 int
 boot_page_process(int ch) {
   if (!boot_page.wp.hidden) {
@@ -102,8 +110,11 @@ boot_page_process(int ch) {
       log("Set exclusive [%i]\n", pages_params.exclusive);
       break;
     case RKEY_ESC:
-      pages_params.exclusive = P_NONE;
-      log("Set exclusive [%i]\n", pages_params.exclusive);
+      if (pages_params.exclusive == P_BOOT) {
+        boot_save_bootdev();
+        pages_params.exclusive = P_NONE;
+        log("Set exclusive [%i]\n", pages_params.exclusive);
+      }
       break;
     default:
       form_driver(boot_page.f, ch);

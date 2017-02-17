@@ -75,6 +75,34 @@ init_net_page(void) {
   //win_show(, label, 1);
 }
 
+void
+net_save_mac(void) {
+  uint8_t mac[6] = {0};
+  int temp = 0;
+  sscanf(field_buffer(net_page.fields[MAC0_VAL], 0), "%02x", &temp);
+  mac[0] = temp&0xff;
+  temp = 0;
+  sscanf(field_buffer(net_page.fields[MAC1_VAL], 0), "%02x", &temp);
+  mac[1] = temp&0xff;
+  temp = 0;
+  sscanf(field_buffer(net_page.fields[MAC2_VAL], 0), "%02x", &temp);
+  mac[2] = temp&0xff;
+  temp = 0;
+  sscanf(field_buffer(net_page.fields[MAC3_VAL], 0), "%02x", &temp);
+  mac[3] = temp&0xff;
+  temp = 0;
+  sscanf(field_buffer(net_page.fields[MAC4_VAL], 0), "%02x", &temp);
+  mac[4] = temp&0xff;
+  temp = 0;
+  sscanf(field_buffer(net_page.fields[MAC5_VAL], 0), "%02x", &temp);
+  mac[5] = temp&0xff;
+  temp = 0;
+
+  log("Save MAC: [%02x:%02x:%02x:%02x:%02x:%02x]\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  //memcpy(fru.mac, mac, 6);
+  fru_mrec_update_mac(&fru, mac);
+}
+
 int
 net_page_process(int ch) {
   if (!net_page.wp.hidden) {
@@ -107,8 +135,11 @@ net_page_process(int ch) {
       log("Set exclusive [%i]\n", pages_params.exclusive);
       break;
     case RKEY_ESC:
-      pages_params.exclusive = P_NONE;
-      log("Set exclusive [%i]\n", pages_params.exclusive);
+      if (pages_params.exclusive == P_NET) {
+        net_save_mac();
+        pages_params.exclusive = P_NONE;
+        log("Set exclusive [%i]\n", pages_params.exclusive);
+      }
       break;
     default:
       form_driver(net_page.f, ch);

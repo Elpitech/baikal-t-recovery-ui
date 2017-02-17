@@ -8,6 +8,8 @@
 
 #define RKEY_ENTER 0x0a
 #define RKEY_ESC   0x1b
+#define RKEY_F10   0x112
+#define RKEY_F6    0x10e
 
 extern FILE *logfile;
 #define log(...) {fprintf (logfile, "L["TAG"]: "__VA_ARGS__); fflush(logfile); }

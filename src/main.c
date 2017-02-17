@@ -1,3 +1,6 @@
+#include <unistd.h>
+#include <sys/reboot.h>
+
 #include <panel.h>
 #include <locale.h>
 #include <stdio.h>
@@ -65,13 +68,13 @@ int main(void) {
   int ch;
   int i = 0;
   int esc = 0;
+  bool update_eeprom = false;
   logfile = fopen("/tmp/recovery-ui.log", "w");
   log("Started log\n");
   
   //setlocale(LC_ALL, "ru_RU.UTF-8");
   log("Parse FRU\n");
   fru_open_parse();
-  memcpy(&fru_back, &fru, sizeof(struct fru));
 	initscr();			/* Start curses mode 		*/
   log("Start color\n");
   start_color();
@@ -114,9 +117,22 @@ int main(void) {
       if (ch != RKEY_ESC) {
         esc = 0;
       } else {
-        esc ++;
+        //esc ++;
       }
     }
+    if (pages_params.exclusive == P_NONE) {
+      switch (ch) {
+      case RKEY_F10:
+        update_eeprom = true;
+        esc = 10;
+        break;
+      case RKEY_F6:
+        //fru_update_mrec_eeprom();
+        esc = 10;
+        break;
+      }
+    }
+
     if (pages_params.exclusive == P_NONE) {
       if (top_menu_process(ch)!=0) {
         continue;
@@ -154,6 +170,18 @@ int main(void) {
   deinit_main_page();
   deinit_top_menu();
 	endwin();			/* End curses mode		  */
+  if (update_eeprom) {
+    int i = 0;
+    fru_update_mrec_eeprom();
+    printf("Saving ");
+    for (;i<10;i++) {
+      sleep(1);
+      printf(".");
+    }
+    sync();
+    reboot(RB_AUTOBOOT);
+  }
+
 	return 0;
 }
 
