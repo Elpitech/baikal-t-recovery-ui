@@ -11,7 +11,7 @@
 #include "pages.h"
 
 #define TAG "TOP_MENU"
-#define N_ITEMS 3
+#define N_ITEMS 4
 
 static struct {
   WINDOW *w;
@@ -21,7 +21,7 @@ static struct {
 } top_menu;
 
 void
-init_top_menu(struct window_params *main, struct window_params *boot, struct window_params *net) {
+init_top_menu(struct window_params *main, struct window_params *boot, struct window_params *net, struct window_params *rec) {
   int width, height;
   top_menu.w = newwin(TOP_MENU_H, TOP_MENU_W, 0, 0);
   wbkgd(top_menu.w, BG_COLOR);
@@ -42,8 +42,11 @@ init_top_menu(struct window_params *main, struct window_params *boot, struct win
   
   top_menu.items[2] = new_item("Network", "NET");
   set_item_userptr(top_menu.items[2], net);
-  
-  top_menu.items[3] = NULL;
+
+  top_menu.items[3] = new_item("Recovery", "REC");
+  set_item_userptr(top_menu.items[3], rec);
+
+  top_menu.items[4] = NULL;
   top_menu.m = new_menu((ITEM **)top_menu.items);
   menu_opts_off(top_menu.m, O_SHOWDESC);
 

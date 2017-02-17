@@ -105,12 +105,15 @@ int main(void) {
   init_main_page();
   init_boot_page();
   init_net_page();
-  init_top_menu(get_main_page_wp(), get_boot_page_wp(), get_net_page_wp());
+  init_recovery_page();
+  init_top_menu(get_main_page_wp(), get_boot_page_wp(), get_net_page_wp(), get_recovery_page_wp());
   hide_all_panels_except(get_main_page_wp());
   update_panels();
   pages_params.exclusive = P_NONE;
+  pages_params.recovery_valid = false;
+  pages_params.start_recovery = false;
   //doupdate();
-	while(esc <= 2) {
+	while((esc <= 2) && (!pages_params.start_recovery)) {
     ch = wgetch(stdscr);
     if (ch != ERR) {
       log("CH: 0x%08x\n", ch);
@@ -153,6 +156,11 @@ int main(void) {
         continue;
       }
     }
+    if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_RECOVERY)) {
+      if (recovery_page_process(ch)!=0) {
+        continue;
+      }
+    }
 
     //refresh();
     //wrefresh(windows[0]);
@@ -170,13 +178,18 @@ int main(void) {
   deinit_main_page();
   deinit_top_menu();
 	endwin();			/* End curses mode		  */
-  if (update_eeprom) {
+  setvbuf(stdout, NULL, _IOLBF, 0);
+  setvbuf(stderr, NULL, _IONBF, 0);
+  if (pages_params.start_recovery) {
+    execl(pages_params.recovery, NULL);
+  } else if (update_eeprom) {
     int i = 0;
     fru_update_mrec_eeprom();
     printf("Saving ");
     for (;i<10;i++) {
       sleep(1);
       printf(".");
+      fflush(stdout);
     }
     sync();
     reboot(RB_AUTOBOOT);

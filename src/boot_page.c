@@ -123,6 +123,7 @@ boot_page_process(int ch) {
       break;
     case RKEY_ESC:
       if (pages_params.exclusive == P_BOOT) {
+        form_driver(boot_page.f, REQ_VALIDATION);
         boot_save_bootdev();
         pages_params.exclusive = P_NONE;
         log("Set exclusive [%i]\n", pages_params.exclusive);
