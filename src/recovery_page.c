@@ -107,7 +107,7 @@ recovery_page_process(int ch) {
       log("Recovery: enter pressed\n");
       if (pages_params.recovery_valid) {
         pages_params.start_recovery = true;
-        log("Set start recoery flag\n");
+        log("Set start recovery flag\n");
       } else {
         log("Recovery is not considered valid\n");
       }

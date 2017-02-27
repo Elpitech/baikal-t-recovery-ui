@@ -181,7 +181,7 @@ int main(void) {
   setvbuf(stdout, NULL, _IOLBF, 0);
   setvbuf(stderr, NULL, _IONBF, 0);
   if (pages_params.start_recovery) {
-    execl(pages_params.recovery, NULL);
+    execl("/bin/ash", "ash", pages_params.recovery);
   } else if (update_eeprom) {
     int i = 0;
     fru_update_mrec_eeprom();
