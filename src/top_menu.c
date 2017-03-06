@@ -43,7 +43,7 @@ init_top_menu(struct window_params *main, struct window_params *boot, struct win
   top_menu.items[2] = new_item("Network", "NET");
   set_item_userptr(top_menu.items[2], net);
 
-  top_menu.items[3] = new_item("Recovery", "REC");
+  top_menu.items[3] = new_item("Run", "RUN");
   set_item_userptr(top_menu.items[3], rec);
 
   top_menu.items[4] = NULL;
