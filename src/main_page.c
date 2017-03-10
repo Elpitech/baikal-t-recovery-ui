@@ -17,7 +17,7 @@
 
 #define TAG "MAIN_PAGE"
 
-#define LABEL_WIDTH 32
+#define LABEL_WIDTH 25
 
 enum fields {
   TIME_LABEL = 0,
@@ -71,6 +71,16 @@ mk_label(int w, int x, int y, char *string, chtype c) {
 }
 
 FIELD *
+mk_label2(int w, int h, int x, int y, char *string, chtype c) {
+  FIELD *f = new_field(h, w, y, x, 0, 0);
+  field_opts_off(f, O_EDIT);
+  set_field_buffer(f, 0, string);
+  set_field_fore(f, c);
+  set_field_back(f, c);
+  return f;
+}
+
+FIELD *
 mk_editable_field_regex(int w, int x, int y, char *string, char *regex, chtype c) {
   FIELD *f = new_field(1, w, y, x, 0, 0);
   set_max_field(f, w);
@@ -88,7 +98,7 @@ init_main_page(void) {
   int width, height;
   time_t t;
   struct tm tm;
-  main_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
+  main_page.wp.w = newwin(LINES-TOP_MENU_H-1,2*COLS/3,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
   box(main_page.wp.w, 0, 0);
   wbkgd(main_page.wp.w, PAGE_COLOR);
 
@@ -103,7 +113,7 @@ init_main_page(void) {
   tm = *localtime(&t);
 
   main_page.fields[TIME_LABEL] = mk_label(LABEL_WIDTH, 0, TIME_LABEL, "Time", PAGE_COLOR);
-  sprintf(main_page.time_label, "%02i:%02i:%02i", tm.tm_hour, tm.tm_min, tm.tm_sec);
+  sprintf(main_page.time_label, "%02i:%02i:%02i UTC", tm.tm_hour, tm.tm_min, tm.tm_sec);
 	main_page.fields[TIME_VAL] = mk_label(LABEL_WIDTH, LABEL_WIDTH, TIME_LABEL, main_page.time_label, PAGE_COLOR);
 
   main_page.fields[DATE_LABEL] = mk_label(LABEL_WIDTH, 0, DATE_LABEL, "Date", PAGE_COLOR);

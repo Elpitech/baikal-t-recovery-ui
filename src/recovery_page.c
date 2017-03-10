@@ -21,8 +21,9 @@
 #include "fru.h"
 
 #define TAG "RECOVERY_PAGE"
+#define REC_DEF_TXT "No recovery images found"
 
-#define LABEL_WIDTH 64
+#define LABEL_WIDTH 25
 
 enum fields {
   RECOVERY_LABEL = 0,
@@ -40,7 +41,7 @@ static struct {
 void
 init_recovery_page(void) {
   int width, height;
-  recovery_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
+  recovery_page.wp.w = newwin(LINES-TOP_MENU_H-1,2*COLS/3,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
   box(recovery_page.wp.w, 0, 0);
   wbkgd(recovery_page.wp.w, PAGE_COLOR);
 
@@ -49,7 +50,7 @@ init_recovery_page(void) {
   getmaxyx(recovery_page.wp.w, height, width);
   (void)height;
 
-  recovery_page.fields[RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, RECOVERY_LABEL, "No recovery images found", PAGE_COLOR);
+  recovery_page.fields[RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, RECOVERY_LABEL, REC_DEF_TXT, PAGE_COLOR);
   recovery_page.fields[NULL_VAL] = NULL;
   
   recovery_page.f = new_form(recovery_page.fields);
@@ -76,6 +77,7 @@ recovery_page_process(int ch) {
     if ((cur_t-last_t)>2) {
       last_t = cur_t;
       ret = stat("/dev/shm/recovery", &st);
+      pages_params.recovery_valid = false;
       if(ret < 0) {
         log("Failed to stat /dev/shm/recovery: %i, errno: %s\n", ret, strerror(errno));
       } else {
@@ -91,12 +93,13 @@ recovery_page_process(int ch) {
           ret = stat(pages_params.recovery, &st);
           if (ret < 0) {          
             warn("Failed to stat %s: %i, errno: %s\n", pages_params.recovery, ret, strerror(errno));
+            set_field_buffer(recovery_page.fields[RECOVERY_LABEL], 0, REC_DEF_TXT);
           } else {
             uint8_t buf[512];
             memset(buf, 0, 512);
             log("Recovery seems to be present\n");
             pages_params.recovery_valid = true;
-            sprintf(buf, "Press enter to start recovery at %s", pages_params.recovery);
+            sprintf(buf, "Press enter to start recovery");
             set_field_buffer(recovery_page.fields[RECOVERY_LABEL], 0, buf);
           }
         }

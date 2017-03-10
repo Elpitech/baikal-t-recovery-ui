@@ -87,6 +87,7 @@ int main(void) {
   init_pair(2, COLOR_BLUE, COLOR_WHITE);
   init_pair(3, COLOR_WHITE, COLOR_BLUE);
   init_pair(4, COLOR_BLACK, COLOR_BLACK);
+  curs_set(0);
   log("Init done\n");
 
   //getmaxyx(NULL, max_y, max_x);
@@ -173,6 +174,7 @@ int main(void) {
   //free_menu(my_menu);
   //for(i = 0; i < 3; i++)
   //free_item(my_items[i]);
+  curs_set(1);
   deinit_net_page();
   deinit_boot_page();
   deinit_main_page();

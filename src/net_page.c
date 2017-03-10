@@ -17,7 +17,7 @@
 
 #define TAG "NET_PAGE"
 
-#define LABEL_WIDTH 32
+#define LABEL_WIDTH 25
 
 enum mac_fields {
   MAC_LABEL = 0,
@@ -44,7 +44,7 @@ void
 init_net_page(void) {
   int width, height;
   int i = 0;
-  net_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
+  net_page.wp.w = newwin(LINES-TOP_MENU_H-1,2*COLS/3,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
   box(net_page.wp.w, 0, 0);
   wbkgd(net_page.wp.w, PAGE_COLOR);
 

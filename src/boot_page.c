@@ -17,7 +17,7 @@
 
 #define TAG "BOOT_PAGE"
 
-#define LABEL_WIDTH 32
+#define LABEL_WIDTH 25
 
 enum fields {
   BOOT_DEVICE_LABEL = 0,
@@ -39,7 +39,7 @@ init_boot_page(void) {
   int width, height;
   time_t t;
   struct tm tm;
-  boot_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
+  boot_page.wp.w = newwin(LINES-TOP_MENU_H-1,2*COLS/3,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
   box(boot_page.wp.w, 0, 0);
   wbkgd(boot_page.wp.w, PAGE_COLOR);
 
