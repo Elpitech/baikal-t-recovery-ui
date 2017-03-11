@@ -20,7 +20,6 @@
 #define LABEL_WIDTH 25
 
 enum mac_fields {
-  MAC_LABEL = 0,
   MAC0_VAL,
   MAC1_VAL,
   MAC2_VAL,
@@ -53,11 +52,12 @@ init_net_page(void) {
   getmaxyx(net_page.wp.w, height, width);
   (void)height;
 
-  net_page.fields[MAC_LABEL] = mk_label(LABEL_WIDTH, 0, MAC_LABEL, "MAC address", PAGE_COLOR);
+  //net_page.fields[MAC_LABEL] = mk_label(LABEL_WIDTH, 0, MAC_LABEL, "MAC address", PAGE_COLOR);
+  mvwaddstr(net_page.wp.w, 2, 2, "MAC address");
   memset(net_page.mac_val, 0, LABEL_WIDTH);
   for (;i<6; i++) {
     sprintf(net_page.mac_val+3*i, "%02x", fru.mac[i]);
-    net_page.fields[MAC0_VAL+i] = mk_editable_field_regex(2, LABEL_WIDTH+3*i, MAC_LABEL, net_page.mac_val+3*i, "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR);
+    net_page.fields[MAC0_VAL+i] = mk_editable_field_regex(2, 3*i, 0, net_page.mac_val+3*i, "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR);
   }
 
   net_page.fields[NULL_VAL] = NULL;
@@ -65,7 +65,7 @@ init_net_page(void) {
   net_page.f = new_form(net_page.fields);
   scale_form(net_page.f, &height, &width);
   set_form_win(net_page.f, net_page.wp.w);
-  net_page.sw = derwin(net_page.wp.w, height, width, 2, 2);
+  net_page.sw = derwin(net_page.wp.w, height, LABEL_WIDTH, 2, LABEL_WIDTH);
   set_form_sub(net_page.f, net_page.sw);
 
   post_form(net_page.f);
@@ -106,40 +106,42 @@ net_save_mac(void) {
 int
 net_page_process(int ch) {
   if (!net_page.wp.hidden) {
+    curs_set(1);
     switch (ch) {
-    case KEY_RIGHT:
-      if (pages_params.exclusive == P_NET) {
-        form_driver(net_page.f, REQ_NEXT_FIELD);
-        //form_driver(net_page.f, REQ_END_LINE);
-      }
+    case KEY_DOWN:
+      //if (pages_params.exclusive == P_NET) {
+      form_driver(net_page.f, REQ_NEXT_FIELD);
+      //form_driver(net_page.f, REQ_END_LINE);
+      //}
       break;
-    case KEY_LEFT:
-      if (pages_params.exclusive == P_NET) {
-        form_driver(net_page.f, REQ_PREV_FIELD);
-        //form_driver(net_page.f, REQ_END_LINE);
-      }
+    case KEY_UP:
+      //if (pages_params.exclusive == P_NET) {
+      form_driver(net_page.f, REQ_PREV_FIELD);
+      //form_driver(net_page.f, REQ_END_LINE);
+      //}
       break;
 		case KEY_BACKSPACE:
 		case 127:
-      if (pages_params.exclusive == P_NET) {
-        form_driver(net_page.f, REQ_DEL_PREV);
-      }
+      //if (pages_params.exclusive == P_NET) {
+      form_driver(net_page.f, REQ_DEL_PREV);
+      //}
       break;
     case KEY_DC:
-      if (pages_params.exclusive == P_NET) {
-        form_driver(net_page.f, REQ_DEL_CHAR);
-      }
+      //if (pages_params.exclusive == P_NET) {
+      form_driver(net_page.f, REQ_DEL_CHAR);
+      //}
 			break;
     case RKEY_ENTER://KEY_ENTER:
-      pages_params.exclusive = P_NET;
-      log("Set exclusive [%i]\n", pages_params.exclusive);
+      //pages_params.exclusive = P_NET;
+      //log("Set exclusive [%i]\n", pages_params.exclusive);
+      net_save_mac();
       break;
     case RKEY_ESC:
-      if (pages_params.exclusive == P_NET) {
-        net_save_mac();
-        pages_params.exclusive = P_NONE;
-        log("Set exclusive [%i]\n", pages_params.exclusive);
-      }
+      //if (pages_params.exclusive == P_NET) {
+      //net_save_mac();
+      //pages_params.exclusive = P_NONE;
+      //log("Set exclusive [%i]\n", pages_params.exclusive);
+      //}
       break;
     default:
       form_driver(net_page.f, ch);

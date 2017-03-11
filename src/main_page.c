@@ -60,15 +60,15 @@ static struct {
 	FORM  *f;
 } main_page;
 
-FIELD *mk_spinner(int w, int x, int y, char **strings, int n_str, chtype c) {
+FIELD *mk_spinner(int w, int x, int y, char **strings, int n_str, int default_n, chtype c) {
   FIELD *f = new_field(1, w, y, x, 0, 0);
   struct spinner_arg *s = (struct spinner_arg *)malloc(sizeof(struct spinner_arg));
-  s->current_str = 0;
+  s->current_str = default_n;
   s->n_str = n_str;
   s->strs = strings;
   set_field_userptr(f, (void *)s);
   field_opts_off(f, O_EDIT);
-  set_field_buffer(f, 0, strings[0]);
+  set_field_buffer(f, 0, strings[default_n]);
   set_field_fore(f, c);
   set_field_back(f, c);
   return f;  
@@ -209,7 +209,7 @@ main_page_process(int ch) {
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
     
-    sprintf(main_page.time_label, "%02i:%02i:%02i", tm.tm_hour, tm.tm_min, tm.tm_sec);
+    sprintf(main_page.time_label, "%02i:%02i:%02i UTC", tm.tm_hour, tm.tm_min, tm.tm_sec);
     set_field_buffer(main_page.fields[TIME_VAL], 0, main_page.time_label);
     //redrawwin(main_page.sw);
     //redrawwin(main_page.wp.w);

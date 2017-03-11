@@ -61,9 +61,16 @@ init_boot_page(void) {
   tm = *localtime(&t);
 
   //boot_page.fields[BOOT_DEVICE_LABEL] = mk_label(LABEL_WIDTH, 0, BOOT_DEVICE_LABEL, "Bootdevice", PAGE_COLOR);
+  log("sata boot device: %s\n", fru.bootdevice);
+  /* log("sata0:1 boot device: %s\n", sata0port1); */
+  /* log("strncmp: %i\n", strncmp(fru.bootdevice, sata0port1, strlen(sata0port1))); */
   mvwaddstr(boot_page.wp.w, 2, 2, "SATA boot priority");
   mvwaddstr(boot_page.wp.w, 4, 2, "Boot partition");
-	boot_page.fields[BOOT_DEVICE_VAL] = mk_spinner(strlen(sata0port0), 0, 2, sata_devs, 2, BG_COLOR);
+  if (strncmp(fru.bootdevice, sata0port1, strlen(sata0port1))==0) {
+   	boot_page.fields[BOOT_DEVICE_VAL] = mk_spinner(strlen(sata0port1), 0, 2, sata_devs, 2, 1, BG_COLOR);
+  } else {
+    boot_page.fields[BOOT_DEVICE_VAL] = mk_spinner(strlen(sata0port0), 0, 2, sata_devs, 2, 0, BG_COLOR);
+  }
 //mk_editable_field_regex(16, 0, 2, fru.bootdevice, "[\.A-Za-z0-9]+", BG_COLOR);
   boot_page.fields[NULL_VAL] = NULL;
   
@@ -107,26 +114,26 @@ boot_page_process(int ch) {
     switch (ch) {
     case KEY_DOWN:
       //if (pages_params.exclusive == P_BOOT) {
-        form_driver(boot_page.f, REQ_NEXT_FIELD);
-        //form_driver(net_page.f, REQ_END_LINE);
-        //}
+      form_driver(boot_page.f, REQ_NEXT_FIELD);
+      //form_driver(net_page.f, REQ_END_LINE);
+      //}
       break;
     case KEY_UP:
       //if (pages_params.exclusive == P_BOOT) {
-        form_driver(boot_page.f, REQ_PREV_FIELD);
-        //form_driver(net_page.f, REQ_END_LINE);
-        //}
+      form_driver(boot_page.f, REQ_PREV_FIELD);
+      //form_driver(net_page.f, REQ_END_LINE);
+      //}
       break;
 		case KEY_BACKSPACE:
 		case 127:
       //if (pages_params.exclusive == P_BOOT) {
-        form_driver(boot_page.f, REQ_DEL_PREV);
-        //}
+      form_driver(boot_page.f, REQ_DEL_PREV);
+      //}
       break;
     case KEY_DC:
       //if (pages_params.exclusive == P_BOOT) {
-        form_driver(boot_page.f, REQ_DEL_CHAR);
-        //}
+      form_driver(boot_page.f, REQ_DEL_CHAR);
+      //}
 			break;
     case RKEY_ENTER://KEY_ENTER:
     {
