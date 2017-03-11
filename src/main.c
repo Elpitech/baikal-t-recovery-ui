@@ -124,7 +124,7 @@ int main(void) {
         //esc ++;
       }
     }
-    if (pages_params.exclusive == P_NONE) {
+    //if (pages_params.exclusive == P_NONE) {
       switch (ch) {
       case RKEY_F10:
         update_eeprom = true;
@@ -135,33 +135,33 @@ int main(void) {
         esc = 10;
         break;
       }
-    }
+      //}
 
-    if (pages_params.exclusive == P_NONE) {
+      //if (pages_params.exclusive == P_NONE) {
       if (top_menu_process(ch)!=0) {
         continue;
       }
-    }
-    if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_MAIN)) {
+      //}
+      //if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_MAIN)) {
       if (main_page_process(ch)!=0) {
         continue;
       }
-    }
-    if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_NET)) {
+      //}
+      //if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_NET)) {
       if (net_page_process(ch)!=0) {
         continue;
       }
-    }
-    if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_BOOT)) {
+      //}
+      //if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_BOOT)) {
       if (boot_page_process(ch)!=0) {
         continue;
       }
-    }
-    if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_RECOVERY)) {
+      //}
+      //if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_RECOVERY)) {
       if (recovery_page_process(ch)!=0) {
         continue;
       }
-    }
+      //}
 
     //refresh();
     //wrefresh(windows[0]);

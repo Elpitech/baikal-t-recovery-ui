@@ -60,6 +60,32 @@ static struct {
 	FORM  *f;
 } main_page;
 
+FIELD *mk_spinner(int w, int x, int y, char **strings, int n_str, chtype c) {
+  FIELD *f = new_field(1, w, y, x, 0, 0);
+  struct spinner_arg *s = (struct spinner_arg *)malloc(sizeof(struct spinner_arg));
+  s->current_str = 0;
+  s->n_str = n_str;
+  s->strs = strings;
+  set_field_userptr(f, (void *)s);
+  field_opts_off(f, O_EDIT);
+  set_field_buffer(f, 0, strings[0]);
+  set_field_fore(f, c);
+  set_field_back(f, c);
+  return f;  
+}
+
+void
+spinner_spin(FIELD *f) {
+  void *p = field_userptr(f);
+  if (p==NULL) {
+    return;
+  }
+  struct spinner_arg *s = (struct spinner_arg *)p;
+  s->current_str++;
+  s->current_str%= s->n_str;
+  set_field_buffer(f, 0, s->strs[s->current_str]);
+}
+
 FIELD *
 mk_label(int w, int x, int y, char *string, chtype c) {
   FIELD *f = new_field(1, w, y, x, 0, 0);
@@ -69,6 +95,11 @@ mk_label(int w, int x, int y, char *string, chtype c) {
   set_field_back(f, c);
   return f;
 }
+
+/* void */
+/* mk_st_label(WINDOW *w, int x, int y, char *string chtype c) { */
+  
+/* } */
 
 FIELD *
 mk_label2(int w, int h, int x, int y, char *string, chtype c) {

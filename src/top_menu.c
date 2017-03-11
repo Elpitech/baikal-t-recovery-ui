@@ -30,14 +30,14 @@ enum bottom_fields {
   B_N_FIELDS=B_NULL_VAL
 };
 
-enum help_fields {
-  NAV_LABEL = 0,
-  NAV_TEXT1,
-  NAV_TEXT2,
-  NAV_TEXT3,
-  H_NULL_VAL,
-  H_N_FIELDS=H_NULL_VAL
-};
+/* enum help_fields { */
+/*   NAV_LABEL = 0, */
+/*   NAV_TEXT1, */
+/*   NAV_TEXT2, */
+/*   NAV_TEXT3, */
+/*   H_NULL_VAL, */
+/*   H_N_FIELDS=H_NULL_VAL */
+/* }; */
 
 static struct {
   WINDOW *w;
@@ -47,15 +47,15 @@ static struct {
   WINDOW *sw;
   WINDOW *sw2;
   WINDOW *sw3;
-  WINDOW *sw4;
+  //WINDOW *sw4;
   ITEM *items[N_ITEMS+1];
   MENU *m;
   FIELD *fields[N_FIELDS+1];
 	FORM  *f;
   FIELD *bottom_fields[B_N_FIELDS+1];
 	FORM  *bottom_f;
-  FIELD *help_fields[H_N_FIELDS+1];
-	FORM  *help_f;
+  //FIELD *help_fields[H_N_FIELDS+1];
+	//FORM  *help_f;
 
 } top_menu;
 
@@ -125,25 +125,35 @@ init_top_menu(struct window_params *main, struct window_params *boot, struct win
   const char nav[] = "Navigation";
   const int nav_l = strlen(nav);
   const char nav_text1[] = "Enter     : edit values";
-  const char nav_text2[] = "left/right: choose page";
-  const char nav_text3[] = "up/down   : choose option";
+  const char nav_text2[] = "Left/Right: choose page";
+  const char nav_text3[] = "Up/Down   : choose option";
+  const char nav_text4[] = "F6        : exit without saving";
+  const char nav_text5[] = "F10       : save and exit";
   top_menu.help_w = newwin(hwin_h, hwin_w, TOP_MENU_H, 2*COLS/3);
   box(top_menu.help_w, 0, 0);
   mvwhline(top_menu.help_w, hwin_h/2-1, 1, 0, hwin_w-2);
   wbkgd(top_menu.help_w, PAGE_COLOR);
   //mvwhline(top_menu.w, 2, 1, ACS_HLINE, width - 2);
-  top_menu.help_fields[NAV_LABEL] = mk_label(nav_l, hwin_w/2-nav_l/2-2, 0, nav, PAGE_COLOR);
-  top_menu.help_fields[NAV_TEXT1] = mk_label(hwin_w-3, 0, NAV_TEXT1, nav_text1, PAGE_COLOR);
-  top_menu.help_fields[NAV_TEXT2] = mk_label(hwin_w-3, 0, NAV_TEXT2, nav_text2, PAGE_COLOR);
-  top_menu.help_fields[NAV_TEXT3] = mk_label(hwin_w-3, 0, NAV_TEXT3, nav_text3, PAGE_COLOR);
+  mvwaddstr(top_menu.help_w, hwin_h/2, hwin_w/2-nav_l/2-2, nav);
+  mvwaddstr(top_menu.help_w, hwin_h/2+1, 2, nav_text1);
+  mvwaddstr(top_menu.help_w, hwin_h/2+2, 2, nav_text2);
+  mvwaddstr(top_menu.help_w, hwin_h/2+3, 2, nav_text3);
+  mvwaddstr(top_menu.help_w, hwin_h/2+4, 2, nav_text4);
+  mvwaddstr(top_menu.help_w, hwin_h/2+5, 2, nav_text5);
+  //top_menu.help_fields[NAV_LABEL] = mk_label(nav_l, hwin_w/2-nav_l/2-2, 0, nav, PAGE_COLOR);
+
+  //top_menu.help_fields[NAV_TEXT1] = mk_label(hwin_w-3, 0, NAV_TEXT1, nav_text1, PAGE_COLOR);
+  //top_menu.help_fields[NAV_TEXT2] = mk_label(hwin_w-3, 0, NAV_TEXT2, nav_text2, PAGE_COLOR);
+  //top_menu.help_fields[NAV_TEXT3] = mk_label(hwin_w-3, 0, NAV_TEXT3, nav_text3, PAGE_COLOR);
   
-  top_menu.help_fields[H_NULL_VAL] = NULL;
-  top_menu.help_f = new_form(top_menu.help_fields);
-  scale_form(top_menu.help_f, &height, &width);
-  set_form_win(top_menu.help_f, top_menu.help_w);
-  top_menu.sw4 = derwin(top_menu.help_w, (hwin_h)/2-1, width, (hwin_h)/2, 2);
-  set_form_sub(top_menu.help_f, top_menu.sw4);
-  post_form(top_menu.help_f);
+  //top_menu.help_fields[H_NULL_VAL] = NULL;
+  //top_menu.help_f = new_form(top_menu.help_fields);
+  //scale_form(top_menu.help_f, &height, &width);
+  //set_form_win(top_menu.help_f, top_menu.help_w);
+  //top_menu.sw4 = derwin(top_menu.help_w, (hwin_h)/2-1, width, (hwin_h)/2, 2);
+  
+  //set_form_sub(top_menu.help_f, top_menu.sw4);
+  //post_form(top_menu.help_f);
 
   post_menu(top_menu.m);
   redrawwin(top_menu.w);

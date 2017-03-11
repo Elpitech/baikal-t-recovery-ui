@@ -16,4 +16,12 @@ extern FILE *logfile;
 #define warn(...) {fprintf (logfile, "W["TAG"]: "__VA_ARGS__); fflush(logfile); }
 #define err(...) {fprintf (logfile, "E["TAG"]: "__VA_ARGS__); fflush(logfile); }
 #define msg(...) {fprintf (logfile, __VA_ARGS__); fflush(logfile); }
+
+
+struct spinner_arg {
+  int current_str;
+  int n_str;
+  char **strs;
+};
+
 #endif/*__COMMON_H__*/
