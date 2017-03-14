@@ -23,7 +23,7 @@
 #define TAG "RECOVERY_PAGE"
 #define REC_DEF_TXT "No recovery images found"
 
-#define LABEL_WIDTH 25
+#define LABEL_WIDTH 30
 
 enum fields {
   RECOVERY_LABEL = 0,
@@ -41,7 +41,7 @@ static struct {
 void
 init_recovery_page(void) {
   int width, height;
-  recovery_page.wp.w = newwin(LINES-TOP_MENU_H-1,2*COLS/3,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
+  recovery_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
   box(recovery_page.wp.w, 0, 0);
   wbkgd(recovery_page.wp.w, PAGE_COLOR);
 
