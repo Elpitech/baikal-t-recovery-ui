@@ -168,7 +168,7 @@ init_main_page(void) {
   if (fru.test_ok==1) {
     main_page.fields[TESTOK_VAL] = mk_label(LABEL_WIDTH, 0, y, "PASSED", GREEN_COLOR);
   } else if (fru.test_ok==2) {
-    main_page.fields[TESTOK_VAL] = mk_label(LABEL_WIDTH, 0, y, "FAILED", COLOR_RED);
+    main_page.fields[TESTOK_VAL] = mk_label(LABEL_WIDTH, 0, y, "FAILED", RED_COLOR);
   } else if (fru.test_ok==0) {
     main_page.fields[TESTOK_VAL] = mk_label(LABEL_WIDTH, 0, y, "UNKNOWN", PAGE_COLOR);
   }
