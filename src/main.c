@@ -196,8 +196,9 @@ int main(void) {
       fflush(stdout);
     }
     sync();
-    reboot(RB_AUTOBOOT);
   }
+  sync();
+  reboot(RB_AUTOBOOT);
 
 	return 0;
 }
