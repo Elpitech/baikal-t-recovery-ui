@@ -74,7 +74,10 @@ int main(void) {
   
   //setlocale(LC_ALL, "ru_RU.UTF-8");
   log("Parse FRU\n");
-  fru_open_parse();
+  if (fru_open_parse()) {
+    sleep(1);
+    fru_open_parse();
+  }
 	initscr();			/* Start curses mode 		*/
   log("Start color\n");
   start_color();
