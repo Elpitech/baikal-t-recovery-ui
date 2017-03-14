@@ -95,11 +95,15 @@ recovery_page_process(int ch) {
             warn("Failed to stat %s: %i, errno: %s\n", pages_params.recovery, ret, strerror(errno));
             set_field_buffer(recovery_page.fields[RECOVERY_LABEL], 0, REC_DEF_TXT);
           } else {
-            uint8_t buf[512];
+            char buf[512];
             memset(buf, 0, 512);
             log("Recovery seems to be present\n");
             pages_params.recovery_valid = true;
-            sprintf(buf, "Press enter to start recovery");
+            if (memmem(pages_params.recovery, strlen(pages_params.recovery), "test.rc", strlen("test.rc"))==NULL) {
+              sprintf(buf, "Press enter to start recovery");  
+            } else {
+              sprintf(buf, "Press enter to start test");
+            }
             set_field_buffer(recovery_page.fields[RECOVERY_LABEL], 0, buf);
           }
         }
