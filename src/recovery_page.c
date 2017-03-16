@@ -16,7 +16,7 @@
 
 #include "common.h"
 #include "pages.h"
-//#include "recovery_page.h"
+#include "main_page.h"
 #include "top_menu.h"
 #include "fru.h"
 

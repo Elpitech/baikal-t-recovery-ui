@@ -9,7 +9,6 @@
 
 #include "common.h"
 #include "top_menu.h"
-#include "pages.h"
 
 #define TAG "TOP_MENU"
 #define N_ITEMS 4
@@ -44,18 +43,9 @@ static struct {
 
 void
 init_top_menu(struct window_params *main, struct window_params *boot, struct window_params *net, struct window_params *rec) {
-  int width, height;
   const char header[] = "T-Platforms mITX recovery";
   top_menu.w = newwin(TOP_MENU_H, TOP_MENU_W, 0, 0);
   wbkgd(top_menu.w, BG_COLOR);
-  //box(top_menu.w, 0, 0);
-
-  //getmaxyx(top_menu.w, height, width);
-  //(void)height;
-
-	/* mvwaddch(top_menu.w, 2, 0, ACS_LTEE);  */
-	/* mvwhline(top_menu.w, 2, 1, ACS_HLINE, width - 2);  */
-	/* mvwaddch(top_menu.w, 2, width - 1, ACS_RTEE);  */
 
   top_menu.items[0] = new_item("Main", "MAIN");
   set_item_userptr(top_menu.items[0], main);

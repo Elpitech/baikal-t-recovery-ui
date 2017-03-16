@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <panel.h>
 #include <locale.h>
 #include <stdio.h>
@@ -16,6 +17,9 @@
 #include "fru.h"
 
 #define TAG "MAIN_PAGE"
+
+#define SHRED_GPIO_BASE 32
+#define SHRED_NGPIO 8
 
 #define LABEL_WIDTH 30
 
@@ -128,6 +132,43 @@ mk_editable_field_regex(int w, int x, int y, char *string, char *regex, chtype c
   return f;
 }
 
+uint32_t read_shred(void) {
+#ifdef REAL_DEVICES
+  uint32_t val = 0;
+  int ret = 0;
+  uint32_t shred_val = 0;
+  int i = 0;
+  char buf[64] = {0};
+  for (i=0;i<SHRED_NGPIO;i++) {
+    log("Opening /sys/class/gpio/export\n");
+    FILE *export = fopen("/sys/class/gpio/export", "w");
+    if (export == NULL) {
+      err("Failed to open /sys/class/gpio/export\n");
+      return val;
+    }
+    ret = sprintf(buf, "%i", i+SHRED_GPIO_BASE);
+    log("Exporting pin %s[len: %i]\n", buf, ret);
+    fwrite(buf, sizeof(char), ret, export);
+    fclose(export);
+    sprintf(buf, "/sys/class/gpio/gpio%i/value", i+SHRED_GPIO_BASE);
+    log("Opening %s\n", buf);
+    FILE *gpio = fopen(buf, "r");
+    if (gpio == NULL) {
+      err("Failed to open %s\n", buf);
+      fclose(export);
+      return shred_val;
+    }
+    ret = fscanf(gpio, "%i", &val);
+    log("gpio[%i] read returned %i, value: %i\n", i+SHRED_GPIO_BASE, ret, val);
+    shred_val |= (val!=0?(1<<i):0);
+    fclose(gpio);
+  }
+  return shred_val;
+#else
+  return FAKE_SHRED;
+#endif
+}
+
 void
 init_main_page(void) {
   int width, height;
@@ -193,43 +234,43 @@ init_main_page(void) {
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Board manufacturer");
-	main_page.fields[BRD_MFG_NAME_VAL] = mk_label(LABEL_WIDTH, 0, y, fru.val_mfg_name, PAGE_COLOR);
+	main_page.fields[BRD_MFG_NAME_VAL] = mk_label(LABEL_WIDTH, 0, y, (char *)fru.val_mfg_name, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Board product name");
-	main_page.fields[BRD_PRODUCT_NAME_VAL] = mk_label(LABEL_WIDTH, 0, y, fru.val_product_name, PAGE_COLOR);
+	main_page.fields[BRD_PRODUCT_NAME_VAL] = mk_label(LABEL_WIDTH, 0, y, (char *)fru.val_product_name, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Board serial number");
-	main_page.fields[BRD_SERIAL_VAL] = mk_label(LABEL_WIDTH, 0, y, fru.val_serial_number, PAGE_COLOR);
+	main_page.fields[BRD_SERIAL_VAL] = mk_label(LABEL_WIDTH, 0, y, (char *)fru.val_serial_number, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Board part number");
-	main_page.fields[BRD_PN_VAL] = mk_label(LABEL_WIDTH, 0, y, fru.val_part_number, PAGE_COLOR);
+	main_page.fields[BRD_PN_VAL] = mk_label(LABEL_WIDTH, 0, y, (char *)fru.val_part_number, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Board FRU file ID");
-	main_page.fields[BRD_FRU_ID_VAL] = mk_label(LABEL_WIDTH, 0, y, fru.val_fru_id, PAGE_COLOR);
+	main_page.fields[BRD_FRU_ID_VAL] = mk_label(LABEL_WIDTH, 0, y, (char *)fru.val_fru_id, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Product manufacturer");
-	main_page.fields[PRODUCT_MFG_VAL] = mk_label(LABEL_WIDTH, 0, y, fru.val_p_product_mfg, PAGE_COLOR);
+	main_page.fields[PRODUCT_MFG_VAL] = mk_label(LABEL_WIDTH, 0, y, (char *)fru.val_p_product_mfg, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Product part/model number");
-	main_page.fields[PART_MODEL_NUMBER_VAL] = mk_label(LABEL_WIDTH, 0, y, fru.val_p_part_model_number, PAGE_COLOR);
+	main_page.fields[PART_MODEL_NUMBER_VAL] = mk_label(LABEL_WIDTH, 0, y, (char *)fru.val_p_part_model_number, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Product version");
-  main_page.fields[PRODUCT_VERSION_VAL] = mk_label(LABEL_WIDTH, 0, y, fru.val_p_product_version, PAGE_COLOR);
+  main_page.fields[PRODUCT_VERSION_VAL] = mk_label(LABEL_WIDTH, 0, y, (char *)fru.val_p_product_version, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Product serial number");
-	main_page.fields[PRODUCT_SERIAL_VAL] = mk_label(LABEL_WIDTH, 0, y, fru.val_p_serial_number, PAGE_COLOR);
+	main_page.fields[PRODUCT_SERIAL_VAL] = mk_label(LABEL_WIDTH, 0, y, (char *)fru.val_p_serial_number, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Product FRU file ID");
-  main_page.fields[PRODUCT_FRU_ID_VAL] = mk_label(LABEL_WIDTH, 0, y, fru.val_p_fru_id, PAGE_COLOR);
+  main_page.fields[PRODUCT_FRU_ID_VAL] = mk_label(LABEL_WIDTH, 0, y, (char *)fru.val_p_fru_id, PAGE_COLOR);
   y+=2;
   
   main_page.fields[NULL_VAL] = NULL;

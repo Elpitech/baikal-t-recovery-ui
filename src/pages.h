@@ -18,7 +18,7 @@ enum PAGES {
 #define RECOVERY_NAME_SIZE 256
 struct pages {
   int exclusive;
-  uint8_t recovery[RECOVERY_NAME_SIZE];
+  char recovery[RECOVERY_NAME_SIZE];
   bool recovery_valid;
   bool start_recovery;
 };

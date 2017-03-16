@@ -11,7 +11,7 @@
 
 #include "common.h"
 #include "pages.h"
-//#include "net_page.h"
+#include "main_page.h"
 #include "top_menu.h"
 #include "fru.h"
 
@@ -34,7 +34,7 @@ static struct {
   struct window_params wp;
   WINDOW *sw;
   uint32_t shred;
-  uint8_t mac_val[LABEL_WIDTH];
+  char mac_val[LABEL_WIDTH];
   FIELD *fields[N_FIELDS+1];
 	FORM  *f;
 } net_page;

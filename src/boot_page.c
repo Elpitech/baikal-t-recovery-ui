@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <panel.h>
 #include <locale.h>
 #include <stdio.h>
@@ -8,6 +9,8 @@
 #include <form.h>
 
 #include <time.h>
+
+#include "main_page.h"
 
 #include "common.h"
 #include "pages.h"
@@ -28,7 +31,7 @@ enum fields {
 static const char sata0port0[] = "sata0:0";
 static const char sata0port1[] = "sata0:1";
 
-static char *sata_devs[] = {
+static const char *sata_devs[] = {
   sata0port0,
   sata0port1
 };
@@ -36,7 +39,6 @@ static char *sata_devs[] = {
 static struct {
   struct window_params wp;
   WINDOW *sw;
-  uint32_t shred;
   FIELD *fields[N_FIELDS+1];
 	FORM  *f;
 } boot_page;
@@ -44,8 +46,6 @@ static struct {
 void
 init_boot_page(void) {
   int width, height;
-  time_t t;
-  struct tm tm;
   boot_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
   box(boot_page.wp.w, 0, 0);
   wbkgd(boot_page.wp.w, PAGE_COLOR);
@@ -55,23 +55,15 @@ init_boot_page(void) {
   getmaxyx(boot_page.wp.w, height, width);
   (void)height;
 
-  boot_page.shred = read_shred();
-  log("shred: 0x%08x\n", boot_page.shred);
-  t = time(NULL);
-  tm = *localtime(&t);
-
-  //boot_page.fields[BOOT_DEVICE_LABEL] = mk_label(LABEL_WIDTH, 0, BOOT_DEVICE_LABEL, "Bootdevice", PAGE_COLOR);
   log("sata boot device: %s\n", fru.bootdevice);
-  /* log("sata0:1 boot device: %s\n", sata0port1); */
-  /* log("strncmp: %i\n", strncmp(fru.bootdevice, sata0port1, strlen(sata0port1))); */
+
   mvwaddstr(boot_page.wp.w, 2, 2, "SATA boot priority");
   mvwaddstr(boot_page.wp.w, 4, 2, "Boot partition");
-  if (strncmp(fru.bootdevice, sata0port1, strlen(sata0port1))==0) {
-   	boot_page.fields[BOOT_DEVICE_VAL] = mk_spinner(strlen(sata0port1), 0, 2, sata_devs, 2, 1, BG_COLOR);
+  if (strncmp((char *)fru.bootdevice, sata0port1, strlen(sata0port1))==0) {
+   	boot_page.fields[BOOT_DEVICE_VAL] = mk_spinner(strlen(sata0port1), 0, 2, (char**)sata_devs, 2, 1, BG_COLOR);
   } else {
-    boot_page.fields[BOOT_DEVICE_VAL] = mk_spinner(strlen(sata0port0), 0, 2, sata_devs, 2, 0, BG_COLOR);
+    boot_page.fields[BOOT_DEVICE_VAL] = mk_spinner(strlen(sata0port0), 0, 2, (char**)sata_devs, 2, 0, BG_COLOR);
   }
-//mk_editable_field_regex(16, 0, 2, fru.bootdevice, "[\.A-Za-z0-9]+", BG_COLOR);
   boot_page.fields[NULL_VAL] = NULL;
   
   boot_page.f = new_form(boot_page.fields);
@@ -83,8 +75,6 @@ init_boot_page(void) {
   post_form(boot_page.f);
 
   redrawwin(boot_page.wp.w);
-	//wnoutrefresh(boot_page.wp.w);
-  //win_show(, label, 1);
 }
 
 void
@@ -104,7 +94,7 @@ boot_save_bootdev(void) {
   log("Obtained buffer: [%s]\n", ptr);
   //int len = strlen(ptr);
   //memcpy(fru.bootdevice, ptr, (len>FRU_STR_MAX?FRU_STR_MAX:len));
-  fru_mrec_update_bootdevice(&fru, ptr);
+  fru_mrec_update_bootdevice(&fru, (uint8_t *)ptr);
 }
 
 int
