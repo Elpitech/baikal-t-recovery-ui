@@ -21,6 +21,8 @@ struct pages {
   char recovery[RECOVERY_NAME_SIZE];
   bool recovery_valid;
   bool start_recovery;
+  int bmc_version[3];
+  uint8_t boot_reason[2];
 };
 
 extern struct pages pages_params;
