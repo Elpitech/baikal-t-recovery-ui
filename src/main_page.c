@@ -203,22 +203,25 @@ void read_bmc_version(void) {
   pages_params.bmc_version[2] = 0;
   pages_params.boot_reason[0] = 0;
   pages_params.boot_reason[1] = 0;
-  ret = stat("/sys/bus/i2c/devices/1-0008/mitx-bmc/version", &st);
-  if (ret<0) {
-    log("Failed to stat bmc sysfs version, assuming ancient BMC\n");
+  FILE *version = fopen("/sys/bus/i2c/drivers/mitx2-bmc/version", "r");
+  if (version == NULL) {
+    err("Failed to open /sys/bus/i2c/drivers/mitx2-bmc/version\n");
     return;
   }
-  FILE *version = fopen("/sys/bus/i2c/devices/1-0008/mitx-bmc/version", "r");
   ret = fscanf(version, "%i.%i.%i", &pages_params.bmc_version[0], &pages_params.bmc_version[1], &pages_params.bmc_version[2]);
   fclose(version);
   log("BMC version read returned %i, value: %i.%i.%i\n", ret, pages_params.bmc_version[0], pages_params.bmc_version[1], pages_params.bmc_version[2]);
   if (pages_params.bmc_version[0] >= 2) {
-    ret = stat("/sys/bus/i2c/devices/1-0008/mitx-bmc/bootreason", &st);
+    ret = stat("/sys/bus/i2c/drivers/mitx2-bmc/bootreason", &st);
     if (ret<0) {
       log("Failed to stat bmc sysfs bootreason, assuming ancient BMC\n");
       return;
     }
-    FILE *bootreason = fopen("/sys/bus/i2c/devices/1-0008/mitx-bmc/bootreason", "r");
+    FILE *bootreason = fopen("/sys/bus/i2c/drivers/mitx2-bmc/bootreason", "r");
+    if (bootreason == NULL) {
+      err("Failed to open /sys/bus/i2c/drivers/mitx2-bmc/bootreason\n");
+      return;
+    }
     ret = fscanf(bootreason, "%i", &reason);
     fclose(bootreason);
     pages_params.boot_reason[0] = reason & 0xff;
