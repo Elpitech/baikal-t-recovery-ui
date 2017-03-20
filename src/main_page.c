@@ -26,11 +26,11 @@
 #define LABEL_WIDTH 25
 
 enum BMC_BOOTREASON {
-  UNKNOWN=0,
-  NORMAL,
-  BOOTCONF_FAIL,
-  NOT_TESTED,
-  TEST_FAIL
+  BR_UNKNOWN=0,
+  BR_NORMAL,
+  BR_BOOTCONF_FAIL,
+  BR_NOT_TESTED,
+  BR_TEST_FAIL
 };
 
 enum fields_col1 {
@@ -228,6 +228,7 @@ void read_bmc_version(void) {
     fclose(bootreason);
     pages_params.boot_reason[0] = reason & 0xff;
     pages_params.boot_reason[1] = (reason>>8) & 0xff;
+    log("Bootreason: %i/%i\n", pages_params.boot_reason[0], pages_params.boot_reason[1]);
   }
 }
 
@@ -254,14 +255,16 @@ init_main_page(void) {
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Boot status");
 
-  if (pages_params.boot_reason[0] == UNKNOWN) {
-    main_page.fields_col1[BOOTREASON_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "UNKNOWN", RED_COLOR);
-  } else if (pages_params.boot_reason[0] == NORMAL) {
+  if (pages_params.boot_reason[0] == BR_NORMAL) {
     main_page.fields_col1[BOOTREASON_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "NORMAL", GREEN_COLOR);
-  } else if (pages_params.boot_reason[0] == BOOTCONF_FAIL) {
+  } else if (pages_params.boot_reason[0] == BR_BOOTCONF_FAIL) {
     main_page.fields_col1[BOOTREASON_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "BOOTCONF FAIL", RED_COLOR);
-  } else if (pages_params.boot_reason[0] == TEST_FAIL) {
+  } else if (pages_params.boot_reason[0] == BR_TEST_FAIL) {
     main_page.fields_col1[BOOTREASON_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "HW TEST FAIL", RED_COLOR);
+  } else if (pages_params.boot_reason[0] == BR_NOT_TESTED) {
+    main_page.fields_col1[BOOTREASON_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "NOT TESTED", RED_COLOR);
+  } else {
+    main_page.fields_col1[BOOTREASON_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "UNKNOWN", RED_COLOR);
   }
   y+=2;
 
@@ -269,30 +272,37 @@ init_main_page(void) {
   mvwaddstr(main_page.wp.w, y+2, 2, "MFG HW test status");
   if (fru.test_ok==1) {
     main_page.fields_col1[TESTOK_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "PASSED", GREEN_COLOR);
+    log("mfg hw test status field len: %i\n", strlen("PASSED"));
   } else if (fru.test_ok==2) {
     main_page.fields_col1[TESTOK_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "FAILED", RED_COLOR);
-  } else if (fru.test_ok==0) {
+    log("mfg hw test status field len: %i\n", strlen("FAILED"));
+  } else {
     main_page.fields_col1[TESTOK_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "UNKNOWN", PAGE_COLOR);
+    log("mfg hw test status field len: %i\n", strlen("UNKNOWN"));
   }
   y+=2;
   
   mvwaddstr(main_page.wp.w, y+2, 2, "Time");
   sprintf(main_page.time_label, "%02i:%02i:%02i UTC", tm.tm_hour, tm.tm_min, tm.tm_sec);
+  log("time field len: %i\n", strlen(main_page.time_label));
 	main_page.fields_col1[TIME_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.time_label, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Date");
   sprintf(main_page.date_label, "%02i-%02i-%04i", tm.tm_mday, tm.tm_mon+1, tm.tm_year + 1900);
+  log("date field len: %i\n", strlen(main_page.date_label));
 	main_page.fields_col1[DATE_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.date_label, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "SHRED");
   sprintf(main_page.shred_label, "%02x", main_page.shred);
+  log("shred field len: %i\n", strlen(main_page.shred_label));
 	main_page.fields_col1[SHRED_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.shred_label, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "BMC protocol version");
   sprintf(main_page.bmc_version_label, "%i.%i.%i", pages_params.bmc_version[0], pages_params.bmc_version[1], pages_params.bmc_version[2]);
+  log("bmc version field len: %i\n", strlen(main_page.bmc_version_label));
 	main_page.fields_col1[BMC_PROTO_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.bmc_version_label, PAGE_COLOR);
   y+=2;
 
@@ -306,6 +316,7 @@ init_main_page(void) {
     sprintf(main_page.rfs_version, "UNKNOWN");
     main_page.fields_col1[RFS_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.rfs_version, RED_COLOR);
   }
+  log("rfs version field len: %i\n", strlen(main_page.rfs_version));
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Kernel release");
@@ -318,6 +329,7 @@ init_main_page(void) {
     sprintf(main_page.kernel_release, "UNKNOWN");
     main_page.fields_col1[KERNEL_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.kernel_release, RED_COLOR);
   }
+  log("kernel version field len: %i\n", strlen(main_page.kernel_release));
   y+=2;
 
   
