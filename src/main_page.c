@@ -309,10 +309,10 @@ init_main_page(void) {
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Kernel release");
-  FILE *rfs = fopen("/proc/sys/kernel/osrelease", "r");
+  FILE *kernel_release = fopen("/proc/sys/kernel/osrelease", "r");
   if (rfs != NULL) {
-    fread(main_page.kernel_release, sizeof(char), 20, rfs);
-    fclose(rfs);
+    fread(main_page.kernel_release, sizeof(char), 20, kernel_release);
+    fclose(kernel_release);
     main_page.fields_col1[KERNEL_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.kernel_release, PAGE_COLOR);
   } else {
     sprintf(main_page.kernel_release, "UNKNOWN");
