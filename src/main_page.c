@@ -35,12 +35,13 @@ enum BMC_BOOTREASON {
 
 enum fields_col1 {
   BOOTREASON_VAL=0,
+  TESTOK_VAL,
   TIME_VAL,
   DATE_VAL,
   SHRED_VAL,
-  TESTOK_VAL,
   BMC_PROTO_VAL,
   RFS_VAL,
+  KERNEL_VAL,
   
   NULL_VAL,
   N_FIELDS=NULL_VAL
@@ -76,6 +77,7 @@ static struct {
   char date_label[20];
   char bmc_version_label[20];
   char rfs_version[20];
+  char kernel_release[20];
   FIELD *fields_col1[N_FIELDS+1];
 	FORM  *f1;
   FIELD *fields_col2[COL2_N_FIELDS+1];
@@ -255,11 +257,22 @@ init_main_page(void) {
   if (pages_params.boot_reason[0] == UNKNOWN) {
     main_page.fields_col1[BOOTREASON_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "UNKNOWN", RED_COLOR);
   } else if (pages_params.boot_reason[0] == NORMAL) {
-    main_page.fields_col1[BOOTREASON_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "NORMAL", GREEN_COLOR);    
+    main_page.fields_col1[BOOTREASON_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "NORMAL", GREEN_COLOR);
   } else if (pages_params.boot_reason[0] == BOOTCONF_FAIL) {
-    main_page.fields_col1[BOOTREASON_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "BOOTCONF FAIL", GREEN_COLOR);    
+    main_page.fields_col1[BOOTREASON_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "BOOTCONF FAIL", RED_COLOR);
   } else if (pages_params.boot_reason[0] == TEST_FAIL) {
-    main_page.fields_col1[BOOTREASON_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "HW TEST FAIL", GREEN_COLOR);    
+    main_page.fields_col1[BOOTREASON_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "HW TEST FAIL", RED_COLOR);
+  }
+  y+=2;
+
+  log("Test ok: %i\n", fru.test_ok);
+  mvwaddstr(main_page.wp.w, y+2, 2, "MFG HW test status");
+  if (fru.test_ok==1) {
+    main_page.fields_col1[TESTOK_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "PASSED", GREEN_COLOR);
+  } else if (fru.test_ok==2) {
+    main_page.fields_col1[TESTOK_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "FAILED", RED_COLOR);
+  } else if (fru.test_ok==0) {
+    main_page.fields_col1[TESTOK_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "UNKNOWN", PAGE_COLOR);
   }
   y+=2;
   
@@ -278,17 +291,6 @@ init_main_page(void) {
 	main_page.fields_col1[SHRED_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.shred_label, PAGE_COLOR);
   y+=2;
 
-  log("Test ok: %i\n", fru.test_ok);
-  mvwaddstr(main_page.wp.w, y+2, 2, "MFG HW test status");
-  if (fru.test_ok==1) {
-    main_page.fields_col1[TESTOK_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "PASSED", GREEN_COLOR);
-  } else if (fru.test_ok==2) {
-    main_page.fields_col1[TESTOK_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "FAILED", RED_COLOR);
-  } else if (fru.test_ok==0) {
-    main_page.fields_col1[TESTOK_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "UNKNOWN", PAGE_COLOR);
-  }
-  y+=2;
-
   mvwaddstr(main_page.wp.w, y+2, 2, "BMC protocol version");
   sprintf(main_page.bmc_version_label, "%i.%i.%i", pages_params.bmc_version[0], pages_params.bmc_version[1], pages_params.bmc_version[2]);
 	main_page.fields_col1[BMC_PROTO_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.bmc_version_label, PAGE_COLOR);
@@ -301,10 +303,22 @@ init_main_page(void) {
     fclose(rfs);
     main_page.fields_col1[RFS_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.rfs_version, PAGE_COLOR);
   } else {
+    sprintf(main_page.rfs_version, "UNKNOWN");
     main_page.fields_col1[RFS_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.rfs_version, RED_COLOR);
   }
   y+=2;
 
+  mvwaddstr(main_page.wp.w, y+2, 2, "Kernel release");
+  FILE *rfs = fopen("/proc/sys/kernel/osrelease", "r");
+  if (rfs != NULL) {
+    fread(main_page.kernel_release, sizeof(char), 20, rfs);
+    fclose(rfs);
+    main_page.fields_col1[KERNEL_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.kernel_release, PAGE_COLOR);
+  } else {
+    sprintf(main_page.kernel_release, "UNKNOWN");
+    main_page.fields_col1[KERNEL_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.kernel_release, RED_COLOR);
+  }
+  y+=2;
 
   
   main_page.fields_col1[NULL_VAL] = NULL;
