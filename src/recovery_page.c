@@ -21,12 +21,15 @@
 #include "fru.h"
 
 #define TAG "RECOVERY_PAGE"
-#define REC_DEF_TXT "No recovery images found"
+#define EXT_REC_DEF_TXT "External recovery image not found"
+#define INT_REC_TXT_NOTFOUND "Internal recovery image not found"
+#define INT_REC_TXT_FOUND "Press enter to start recovery from disk"
 
-#define LABEL_WIDTH 30
+#define LABEL_WIDTH 40
 
 enum fields {
-  RECOVERY_LABEL = 0,
+  EXT_RECOVERY_LABEL = 0,
+  INT_RECOVERY_LABEL,
   NULL_VAL,
   N_FIELDS=NULL_VAL
 };
@@ -37,6 +40,22 @@ static struct {
   FIELD *fields[N_FIELDS+1];
 	FORM  *f;
 } recovery_page;
+
+void
+check_int_recovery(void) {
+  struct stat st;
+  int ret = 0;
+
+  ret = stat("/recovery/recovery.rc", &st);
+  pages_params.int_recovery_valid = false;
+  if(ret < 0) {
+    log("Failed to stat /recovery/recovery.rc: %i, errno: %s\n", ret, strerror(errno));
+  } else {
+    log("Recovery seems to be present\n");
+    pages_params.int_recovery_valid = true;
+    set_field_buffer(recovery_page.fields[INT_RECOVERY_LABEL], 0, INT_REC_TXT_FOUND);
+  }
+}
 
 void
 init_recovery_page(void) {
@@ -50,7 +69,8 @@ init_recovery_page(void) {
   getmaxyx(recovery_page.wp.w, height, width);
   (void)height;
 
-  recovery_page.fields[RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, RECOVERY_LABEL, REC_DEF_TXT, PAGE_COLOR);
+  recovery_page.fields[EXT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, EXT_RECOVERY_LABEL, EXT_REC_DEF_TXT, PAGE_COLOR);
+  recovery_page.fields[INT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, INT_RECOVERY_LABEL, INT_REC_TXT_NOTFOUND, PAGE_COLOR);
   recovery_page.fields[NULL_VAL] = NULL;
   
   recovery_page.f = new_form(recovery_page.fields);
@@ -62,6 +82,8 @@ init_recovery_page(void) {
   post_form(recovery_page.f);
 
   redrawwin(recovery_page.wp.w);
+
+  check_int_recovery();
 	//wnoutrefresh(recovery_page.wp.w);
   //win_show(, label, 1);
 }
@@ -93,18 +115,18 @@ recovery_page_process(int ch) {
           ret = stat(pages_params.recovery, &st);
           if (ret < 0) {          
             warn("Failed to stat %s: %i, errno: %s\n", pages_params.recovery, ret, strerror(errno));
-            set_field_buffer(recovery_page.fields[RECOVERY_LABEL], 0, REC_DEF_TXT);
+            set_field_buffer(recovery_page.fields[EXT_RECOVERY_LABEL], 0, EXT_REC_DEF_TXT);
           } else {
             char buf[512];
             memset(buf, 0, 512);
             log("Recovery seems to be present\n");
             pages_params.recovery_valid = true;
             if (memmem(pages_params.recovery, strlen(pages_params.recovery), "test.rc", strlen("test.rc"))==NULL) {
-              sprintf(buf, "Press enter to start recovery");  
+              sprintf(buf, "Press enter to start USB recovery");
             } else {
-              sprintf(buf, "Press enter to start test");
+              sprintf(buf, "Press enter to start USB test");
             }
-            set_field_buffer(recovery_page.fields[RECOVERY_LABEL], 0, buf);
+            set_field_buffer(recovery_page.fields[EXT_RECOVERY_LABEL], 0, buf);
           }
         }
       }
@@ -121,6 +143,19 @@ recovery_page_process(int ch) {
       //pages_params.exclusive = P_RECOVERY;
       //log("Set exclusive [%i]\n", pages_params.exclusive);
       break;
+    case KEY_DOWN:
+      //if (pages_params.exclusive == P_NET) {
+      form_driver(recovery_page.f, REQ_NEXT_FIELD);
+      //form_driver(net_page.f, REQ_END_LINE);
+      //}
+      break;
+    case KEY_UP:
+      //if (pages_params.exclusive == P_NET) {
+      form_driver(recovery_page.f, REQ_PREV_FIELD);
+      //form_driver(net_page.f, REQ_END_LINE);
+      //}
+      break;
+
       //case RKEY_ESC:
       //if (pages_params.exclusive == P_RECOVERY) {
       //pages_params.exclusive = P_NONE;
