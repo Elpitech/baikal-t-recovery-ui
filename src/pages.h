@@ -22,6 +22,7 @@ struct pages {
   bool recovery_valid;
   bool int_recovery_valid;
   bool start_recovery;
+  bool start_int_recovery;
   int bmc_version[3];
   uint8_t boot_reason[2];
 };

@@ -26,4 +26,6 @@ struct spinner_arg {
   char **strs;
 };
 
+#define INT_RECOVERY_PATH "/recovery/recovery.rc"
+
 #endif/*__COMMON_H__*/

@@ -46,7 +46,7 @@ check_int_recovery(void) {
   struct stat st;
   int ret = 0;
 
-  ret = stat("/recovery/recovery.rc", &st);
+  ret = stat(INT_RECOVERY_PATH, &st);
   pages_params.int_recovery_valid = false;
   if(ret < 0) {
     log("Failed to stat /recovery/recovery.rc: %i, errno: %s\n", ret, strerror(errno));
@@ -133,16 +133,30 @@ recovery_page_process(int ch) {
     }
     switch (ch) {
     case RKEY_ENTER://KEY_ENTER:
+    {
       log("Recovery: enter pressed\n");
-      if (pages_params.recovery_valid) {
-        pages_params.start_recovery = true;
-        log("Set start recovery flag\n");
-      } else {
-        log("Recovery is not considered valid\n");
+      FIELD *f = current_field(recovery_page.f);
+      if (f == recovery_page.fields[EXT_RECOVERY_LABEL]) {
+        if (pages_params.recovery_valid) {
+          pages_params.start_recovery = true;
+          pages_params.start_int_recovery = true;
+          log("Set start recovery flag\n");
+        } else {
+          log("Recovery is not considered valid\n");
+        }
+      } else if (f == recovery_page.fields[INT_RECOVERY_LABEL]) {
+        if (pages_params.int_recovery_valid) {
+          pages_params.start_int_recovery = true;
+          pages_params.start_recovery = true;
+          log("Set start int recovery flag\n");
+        } else {
+          log("Recovery is not considered valid\n");
+        }
       }
+    }
       //pages_params.exclusive = P_RECOVERY;
       //log("Set exclusive [%i]\n", pages_params.exclusive);
-      break;
+    break;
     case KEY_DOWN:
       //if (pages_params.exclusive == P_NET) {
       form_driver(recovery_page.f, REQ_NEXT_FIELD);

@@ -139,6 +139,8 @@ int main(void) {
   setvbuf(stderr, NULL, _IONBF, 0);
   if (pages_params.start_recovery) {
     execl("/bin/ash", "ash", pages_params.recovery, NULL);
+  } else if (pages_params.start_int_recovery) {
+    execl("/bin/ash", "ash", INT_RECOVERY_PATH, NULL);
   } else if (update_eeprom) {
     int i = 0;
     fru_update_mrec_eeprom();
