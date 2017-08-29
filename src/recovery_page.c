@@ -87,18 +87,27 @@ check_ext_recovery(void) {
   }
 
   log("Recovery is found\n");
-  f = fopen("/tmp/recovery-tar-path", "r");
+  f = fopen(EXT_RECOVERY_TAR_PATH, "r");
   if (f == NULL) {
     warn("Failed to open /tmp/recovery-tar-path");
     return;
   }
-  memset(pages_params.recovery-tar-path, 0, RECOVERY_NAME_SIZE);
-  fread(pages_params.recovery, RECOVERY_NAME_SIZE, sizeof(uint8_t), f);
+  memset(pages_params.recovery_tar_path, 0, RECOVERY_NAME_SIZE);
+  fread(pages_params.recovery_tar_path, RECOVERY_NAME_SIZE, sizeof(uint8_t), f);
   fclose(f);
-  log("Recovery tar is reported at: %s, checking\n", pages_params.recovery);
-  ret = stat(pages_params.recovery, &st);
+  f = fopen(EXT_RECOVERY_MDEV, "r");
+  if (f == NULL) {
+    warn("Failed to open /tmp/recovery-mdev");
+    return;
+  }
+  memset(pages_params.recovery_mdev, 0, RECOVERY_NAME_SIZE);
+  fread(pages_params.recovery_mdev, RECOVERY_NAME_SIZE, sizeof(uint8_t), f);
+  fclose(f);
+
+  log("Recovery tar is reported at: %s, checking\n", pages_params.recovery_tar_path);
+  ret = stat(pages_params.recovery_tar_path, &st);
   if (ret < 0) {
-    warn("Failed to stat %s: %i, errno: %s\n", pages_params.recovery, ret, strerror(errno));
+    warn("Failed to stat %s: %i, errno: %s\n", pages_params.recovery_tar_path, ret, strerror(errno));
     set_field_buffer(recovery_page.fields[EXT_RECOVERY_LABEL], 0, EXT_REC_TXT_NOTFOUND);
     return;
   }
@@ -129,7 +138,7 @@ init_recovery_page(void) {
   getmaxyx(recovery_page.wp.w, height, width);
   (void)height;
 
-  recovery_page.fields[EXT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, EXT_RECOVERY_LABEL, EXT_REC_DEF_TXT, PAGE_COLOR);
+  recovery_page.fields[EXT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, EXT_RECOVERY_LABEL, EXT_REC_TXT_NOTFOUND, PAGE_COLOR);
   recovery_page.fields[INT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, INT_RECOVERY_LABEL, INT_REC_TXT_NOTFOUND, PAGE_COLOR);
   recovery_page.fields[NULL_VAL] = NULL;
   
