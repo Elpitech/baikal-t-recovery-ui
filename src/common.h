@@ -27,5 +27,8 @@ struct spinner_arg {
 };
 
 #define INT_RECOVERY_PATH "/recovery/recovery.rc"
+#define EXT_RECOVERY_PATH "/tmp/recovery.rc"
+#define EXT_RECOVERY_TAR_PATH "/tmp/recovery-tar-path"
+#define EXT_RECOVERY_MDEV "/tmp/recovery-mdev"
 
 #endif/*__COMMON_H__*/
