@@ -21,10 +21,11 @@
 #include "fru.h"
 
 #define TAG "RECOVERY_PAGE"
-#define EXT_REC_TXT_NOTFOUND "External recovery image not found"
-#define EXT_REC_TXT_FOUND "Press enter to start recovery from USB"
-#define INT_REC_TXT_NOTFOUND "Internal recovery image not found"
-#define INT_REC_TXT_FOUND "Press enter to start recovery from disk"
+#define RECOVERY_OPTIONS "Recovery options"
+#define EXT_REC_TXT_NOTFOUND "      USB recovery image not found"
+#define EXT_REC_TXT_FOUND " Press enter to start recovery from USB"
+#define INT_REC_TXT_NOTFOUND "            No other options"
+#define INT_REC_TXT_FOUND " Press enter to start recovery from disk"
 
 #define LABEL_WIDTH 40
 
@@ -110,23 +111,27 @@ check_recovery(char *tar_path, char *recovery_path, char *recovery_mdev, char *r
     }
     return;
   }
-  log("Recovery seems to be present\n");
   if (int_recovery) {
+    log("Internal recovery seems to be present\n");
     pages_params.int_recovery_valid = true;
   } else {
+    log("External recovery seems to be present\n");
     pages_params.ext_recovery_valid = true;
   }
-  f = fopen(recovery_line, "r");
-  if (f == NULL) {
-    warn("Failed to open %s", recovery_line);
-    return;
+  if (!int_recovery) {
+    f = fopen(recovery_line, "r");
+    if (f == NULL) {
+      warn("Failed to open %s", recovery_line);
+      return;
+    }
+    char buf[256];
+    memset(buf, 0, 256);
+    fread(buf, 256, sizeof(uint8_t), f);
+    fclose(f);
+    set_field_buffer(recovery_page.fields[label], 0, buf);
+  } else {
+    set_field_buffer(recovery_page.fields[label], 0, INT_REC_TXT_FOUND);
   }
-  char buf[256];
-  memset(buf, 0, 256);
-  fread(buf, 256, sizeof(uint8_t), f);
-  fclose(f);
-
-  set_field_buffer(recovery_page.fields[label], 0, buf);
 }
 
 void
@@ -151,14 +156,15 @@ init_recovery_page(void) {
   getmaxyx(recovery_page.wp.w, height, width);
   (void)height;
 
-  recovery_page.fields[EXT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, EXT_RECOVERY_LABEL, EXT_REC_TXT_NOTFOUND, PAGE_COLOR);
-  recovery_page.fields[INT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, INT_RECOVERY_LABEL, INT_REC_TXT_NOTFOUND, PAGE_COLOR);
+  mvwaddstr(recovery_page.wp.w, 2, 2, RECOVERY_OPTIONS);
+  recovery_page.fields[EXT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, EXT_RECOVERY_LABEL, EXT_REC_TXT_NOTFOUND, BG_COLOR);
+  recovery_page.fields[INT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, INT_RECOVERY_LABEL*2, INT_REC_TXT_NOTFOUND, BG_COLOR);
   recovery_page.fields[NULL_VAL] = NULL;
   
   recovery_page.f = new_form(recovery_page.fields);
   scale_form(recovery_page.f, &height, &width);
   set_form_win(recovery_page.f, recovery_page.wp.w);
-  recovery_page.sw = derwin(recovery_page.wp.w, height, width, 2, 2);
+  recovery_page.sw = derwin(recovery_page.wp.w, height, width, 4, 2);
   set_form_sub(recovery_page.f, recovery_page.sw);
 
   post_form(recovery_page.f);
@@ -178,6 +184,7 @@ recovery_page_process(int ch) {
     if ((cur_t-last_t)>2) {
       last_t = cur_t;
       check_ext_recovery();
+      check_int_recovery();
     }
     switch (ch) {
     case RKEY_ENTER://KEY_ENTER:
