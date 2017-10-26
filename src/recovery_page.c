@@ -45,12 +45,21 @@ static struct {
 void
 check_recovery(char *tar_path, char *recovery_path, char *recovery_mdev, char *recovery_line, enum fields label, bool int_recovery) {
   char *rtp = pages_params.ext_recovery_tar_path;
-  char *rmdev = pages_params.ext_recovery_mdev
+  char *rmdev = pages_params.ext_recovery_mdev;
   struct stat st;
   int ret = 0;
   FILE *f;
+  if (int_recovery) {
+    rtp = pages_params.int_recovery_tar_path;
+    rmdev = pages_params.int_recovery_mdev;
+  }
+
   ret = stat(tar_path, &st);
-  pages_params.recovery_valid = false;
+  if (int_recovery) {
+    pages_params.int_recovery_valid = false;
+  } else {
+    pages_params.ext_recovery_valid = false;
+  }
   if (ret < 0) {
     log("Failed to stat %s: %i, errno: %s\n", tar_path, ret, strerror(errno));
     return;
@@ -78,10 +87,6 @@ check_recovery(char *tar_path, char *recovery_path, char *recovery_mdev, char *r
     warn("Failed to open %s", tar_path);
     return;
   }
-  if (int_recovery) {
-    rtp = pages_params.int_recovery_tar_path;
-    rmdev = pages_params.int_recovery_mdev;
-  }
   memset(rtp, 0, RECOVERY_NAME_SIZE);
   fread(rtp, RECOVERY_NAME_SIZE, sizeof(uint8_t), f);
   fclose(f);
@@ -94,10 +99,10 @@ check_recovery(char *tar_path, char *recovery_path, char *recovery_mdev, char *r
   fread(rmdev, RECOVERY_NAME_SIZE, sizeof(uint8_t), f);
   fclose(f);
 
-  log("Recovery tar is reported at: %s, checking\n", pages_params.recovery_tar_path);
-  ret = stat(pages_params.recovery_tar_path, &st);
+  log("Recovery tar is reported at: %s, checking\n", rtp);
+  ret = stat(rtp, &st);
   if (ret < 0) {
-    warn("Failed to stat %s: %i, errno: %s\n", pages_params.recovery_tar_path, ret, strerror(errno));
+    warn("Failed to stat %s: %i, errno: %s\n", rtp, ret, strerror(errno));
     if (int_recovery) {
       set_field_buffer(recovery_page.fields[label], 0, INT_REC_TXT_NOTFOUND);
     } else {
@@ -106,7 +111,11 @@ check_recovery(char *tar_path, char *recovery_path, char *recovery_mdev, char *r
     return;
   }
   log("Recovery seems to be present\n");
-  pages_params.recovery_valid = true;
+  if (int_recovery) {
+    pages_params.int_recovery_valid = true;
+  } else {
+    pages_params.ext_recovery_valid = true;
+  }
   f = fopen(recovery_line, "r");
   if (f == NULL) {
     warn("Failed to open %s", recovery_line);

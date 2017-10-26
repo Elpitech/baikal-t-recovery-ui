@@ -29,6 +29,7 @@ struct spinner_arg {
 #define INT_RECOVERY_PATH "/tmp/int/recovery.rc"
 #define INT_RECOVERY_TAR_PATH "/tmp/int/recovery-tar-path"
 #define INT_RECOVERY_MDEV "/tmp/int/recovery-mdev"
+#define INT_RECOVERY_LINE "/tmp/int/line"
 #define EXT_RECOVERY_PATH "/tmp/recovery.rc"
 #define EXT_RECOVERY_TAR_PATH "/tmp/recovery-tar-path"
 #define EXT_RECOVERY_MDEV "/tmp/recovery-mdev"
