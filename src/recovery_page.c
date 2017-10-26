@@ -43,79 +43,73 @@ static struct {
 } recovery_page;
 
 void
-check_int_recovery(void) {
-  struct stat st;
-  int ret = 0;
-
-  ret = stat(INT_RECOVERY_PATH, &st);
-  pages_params.int_recovery_valid = false;
-  if(ret < 0) {
-    log("Failed to stat /recovery/recovery.rc: %i, errno: %s\n", ret, strerror(errno));
-  } else {
-    log("Recovery seems to be present\n");
-    pages_params.int_recovery_valid = true;
-    set_field_buffer(recovery_page.fields[INT_RECOVERY_LABEL], 0, INT_REC_TXT_FOUND);
-  }
-}
-
-void
-check_ext_recovery(void) {
+check_recovery(char *tar_path, char *recovery_path, char *recovery_mdev, char *recovery_line, enum fields label, bool int_recovery) {
+  char *rtp = pages_params.ext_recovery_tar_path;
+  char *rmdev = pages_params.ext_recovery_mdev
   struct stat st;
   int ret = 0;
   FILE *f;
-  ret = stat("/tmp/recovery-tar-path", &st);
+  ret = stat(tar_path, &st);
   pages_params.recovery_valid = false;
   if (ret < 0) {
-    log("Failed to stat /tmp/recovery-tar-path: %i, errno: %s\n", ret, strerror(errno));
+    log("Failed to stat %s: %i, errno: %s\n", tar_path, ret, strerror(errno));
     return;
   }
-  ret = stat("/tmp/recovery.rc", &st);
+  ret = stat(recovery_path, &st);
   if (ret < 0) {
-    log("Failed to stat /tmp/recovery.rc: %i, errno: %s\n", ret, strerror(errno));
+    log("Failed to stat %s: %i, errno: %s\n", recovery_path, ret, strerror(errno));
     return;
   }
-  ret = stat("/tmp/recovery-mdev", &st);
+  ret = stat(recovery_mdev, &st);
   if (ret < 0) {
-    log("Failed to stat /tmp/recovery-mdev: %i, errno: %s\n", ret, strerror(errno));
+    log("Failed to stat %s: %i, errno: %s\n", recovery_mdev, ret, strerror(errno));
     return;
   }
 
-  ret = stat("/tmp/line", &st);
+  ret = stat(recovery_line, &st);
   if (ret < 0) {
-    log("Failed to stat /tmp/line: %i, errno: %s\n", ret, strerror(errno));
+    log("Failed to stat %s: %i, errno: %s\n", recovery_line, ret, strerror(errno));
     return;
   }
 
   log("Recovery is found\n");
-  f = fopen(EXT_RECOVERY_TAR_PATH, "r");
+  f = fopen(tar_path, "r");
   if (f == NULL) {
-    warn("Failed to open /tmp/recovery-tar-path");
+    warn("Failed to open %s", tar_path);
     return;
   }
-  memset(pages_params.recovery_tar_path, 0, RECOVERY_NAME_SIZE);
-  fread(pages_params.recovery_tar_path, RECOVERY_NAME_SIZE, sizeof(uint8_t), f);
+  if (int_recovery) {
+    rtp = pages_params.int_recovery_tar_path;
+    rmdev = pages_params.int_recovery_mdev;
+  }
+  memset(rtp, 0, RECOVERY_NAME_SIZE);
+  fread(rtp, RECOVERY_NAME_SIZE, sizeof(uint8_t), f);
   fclose(f);
-  f = fopen(EXT_RECOVERY_MDEV, "r");
+  f = fopen(recovery_mdev, "r");
   if (f == NULL) {
-    warn("Failed to open /tmp/recovery-mdev");
+    warn("Failed to open %s", recovery_mdev);
     return;
   }
-  memset(pages_params.recovery_mdev, 0, RECOVERY_NAME_SIZE);
-  fread(pages_params.recovery_mdev, RECOVERY_NAME_SIZE, sizeof(uint8_t), f);
+  memset(rmdev, 0, RECOVERY_NAME_SIZE);
+  fread(rmdev, RECOVERY_NAME_SIZE, sizeof(uint8_t), f);
   fclose(f);
 
   log("Recovery tar is reported at: %s, checking\n", pages_params.recovery_tar_path);
   ret = stat(pages_params.recovery_tar_path, &st);
   if (ret < 0) {
     warn("Failed to stat %s: %i, errno: %s\n", pages_params.recovery_tar_path, ret, strerror(errno));
-    set_field_buffer(recovery_page.fields[EXT_RECOVERY_LABEL], 0, EXT_REC_TXT_NOTFOUND);
+    if (int_recovery) {
+      set_field_buffer(recovery_page.fields[label], 0, INT_REC_TXT_NOTFOUND);
+    } else {
+      set_field_buffer(recovery_page.fields[label], 0, EXT_REC_TXT_NOTFOUND);
+    }
     return;
   }
   log("Recovery seems to be present\n");
   pages_params.recovery_valid = true;
-  f = fopen("/tmp/line", "r");
+  f = fopen(recovery_line, "r");
   if (f == NULL) {
-    warn("Failed to open /tmp/line");
+    warn("Failed to open %s", recovery_line);
     return;
   }
   char buf[256];
@@ -123,7 +117,17 @@ check_ext_recovery(void) {
   fread(buf, 256, sizeof(uint8_t), f);
   fclose(f);
 
-  set_field_buffer(recovery_page.fields[EXT_RECOVERY_LABEL], 0, buf);
+  set_field_buffer(recovery_page.fields[label], 0, buf);
+}
+
+void
+check_ext_recovery(void) {
+  check_recovery(EXT_RECOVERY_TAR_PATH, EXT_RECOVERY_PATH, EXT_RECOVERY_MDEV, EXT_RECOVERY_LINE, EXT_RECOVERY_LABEL, false);
+}
+
+void
+check_int_recovery(void) {
+  check_recovery(INT_RECOVERY_TAR_PATH, INT_RECOVERY_PATH, INT_RECOVERY_MDEV, INT_RECOVERY_LINE, INT_RECOVERY_LABEL, true);
 }
 
 void
@@ -172,18 +176,18 @@ recovery_page_process(int ch) {
       log("Recovery: enter pressed\n");
       FIELD *f = current_field(recovery_page.f);
       if (f == recovery_page.fields[EXT_RECOVERY_LABEL]) {
-        if (pages_params.recovery_valid) {
-          pages_params.start_recovery = true;
-          pages_params.start_int_recovery = true;
-          log("Set start recovery flag\n");
+        if (pages_params.ext_recovery_valid) {
+          pages_params.start_ext_recovery = true;
+          pages_params.start_int_recovery = false;
+          log("Set start external recovery flag\n");
         } else {
           log("Recovery is not considered valid\n");
         }
       } else if (f == recovery_page.fields[INT_RECOVERY_LABEL]) {
         if (pages_params.int_recovery_valid) {
           pages_params.start_int_recovery = true;
-          pages_params.start_recovery = true;
-          log("Set start int recovery flag\n");
+          pages_params.start_ext_recovery = false;
+          log("Set start internal recovery flag\n");
         } else {
           log("Recovery is not considered valid\n");
         }

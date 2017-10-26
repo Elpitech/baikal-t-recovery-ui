@@ -38,6 +38,7 @@ int main(void) {
 
   logfile = fopen("/tmp/recovery-ui.log", "w");
   log("Started log\n");
+  log("ttyname: %s\n", ttyname(0));
   
   //setlocale(LC_ALL, "ru_RU.UTF-8");
   log("Parse FRU\n");
@@ -71,10 +72,15 @@ int main(void) {
   hide_all_panels_except(get_main_page_wp());
   update_panels();
   pages_params.exclusive = P_NONE;
-  pages_params.recovery_valid = false;
-  pages_params.start_recovery = false;
+  pages_params.int_recovery_valid = false;
+  pages_params.start_int_recovery = false;
+  pages_params.ext_recovery_valid = false;
+  pages_params.start_ext_recovery = false;
 
-	while((esc <= 2) && (!pages_params.start_recovery)) {
+
+	while((esc <= 2) &&
+        (!pages_params.start_int_recovery) &&
+        (!pages_params.start_ext_recovery)) {
     ch = wgetch(stdscr);
     if (ch != ERR) {
       log("CH: 0x%08x\n", ch);
@@ -137,10 +143,10 @@ int main(void) {
 	endwin();			/* End curses mode		  */
   setvbuf(stdout, NULL, _IOLBF, 0);
   setvbuf(stderr, NULL, _IONBF, 0);
-  if (pages_params.start_recovery) {
-    execl("/bin/ash", "ash", EXT_RECOVERY_PATH, pages_params.recovery_tar_path, pages_params.recovery_mdev, NULL);
+  if (pages_params.start_ext_recovery) {
+    execl("/bin/ash", "ash", EXT_RECOVERY_PATH, pages_params.ext_recovery_tar_path, pages_params.ext_recovery_mdev, NULL);
   } else if (pages_params.start_int_recovery) {
-    execl("/bin/ash", "ash", INT_RECOVERY_PATH, NULL);
+    execl("/bin/ash", "ash", INT_RECOVERY_PATH, pages_params.int_recovery_tar_path, pages_params.int_recovery_mdev, NULL);
   } else if (update_eeprom) {
     int i = 0;
     fru_update_mrec_eeprom();
