@@ -425,6 +425,8 @@ main_page_process(int ch) {
     
     sprintf(main_page.time_label, "%02i:%02i:%02i UTC", tm.tm_hour, tm.tm_min, tm.tm_sec);
     set_field_buffer(main_page.fields_col1[TIME_VAL], 0, main_page.time_label);
+    sprintf(main_page.date_label, "%02i-%02i-%04i", tm.tm_mday, tm.tm_mon+1, tm.tm_year + 1900);
+    set_field_buffer(main_page.fields_col1[DATE_VAL], 0, main_page.date_label);
     //redrawwin(main_page.sw);
     //redrawwin(main_page.wp.w);
     //wnoutrefresh(main_page.sw);
