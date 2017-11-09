@@ -122,6 +122,7 @@ boot_save_power_policy(void) {
   for (;i<PP_NUM;i++) {
     if (ptr == power_policies[i]) {
       fru_mrec_update_power_policy(&fru, i);
+      fru_mrec_update_power_state(&fru);
       return;
     }
   }
