@@ -159,7 +159,7 @@ int main(void) {
     sync();
   }
   sync();
-  //reboot(RB_AUTOBOOT);
+  reboot(RB_AUTOBOOT);
 
 	return 0;
 }
