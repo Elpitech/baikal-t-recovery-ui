@@ -120,7 +120,7 @@ boot_save_power_policy(void) {
   int i = 0;
   char *ptr = field_buffer(boot_page.fields[POWER_POLICY_VAL], 0);
   for (;i<PP_NUM;i++) {
-    if (ptr == power_policies[i]) {
+    if (strncmp(ptr, power_policies[i], strlen(power_policies[i])) == 0) {
       fru_mrec_update_power_policy(&fru, i);
       fru_mrec_update_power_state(&fru);
       return;
