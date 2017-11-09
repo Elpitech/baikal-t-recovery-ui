@@ -24,6 +24,7 @@
 
 enum fields {
   BOOT_DEVICE_VAL = 0,
+  POWER_POLICY_VAL,
   NULL_VAL,
   N_FIELDS=NULL_VAL
 };
@@ -34,6 +35,16 @@ static const char sata0port1[] = "sata0:1";
 static const char *sata_devs[] = {
   sata0port0,
   sata0port1
+};
+
+static const char pp_off [] = "always off";
+static const char pp_keep[] = "restore";
+static const char pp_on  [] = "always on";
+
+static const char *power_policies[] = {
+  pp_off,
+  pp_keep,
+  pp_on
 };
 
 static struct {
@@ -59,11 +70,17 @@ init_boot_page(void) {
 
   mvwaddstr(boot_page.wp.w, 2, 2, "SATA boot priority");
   mvwaddstr(boot_page.wp.w, 4, 2, "Boot partition");
+  mvwaddstr(boot_page.wp.w, 6, 2, "Power restore policy");
   if (strncmp((char *)fru.bootdevice, sata0port1, strlen(sata0port1))==0) {
    	boot_page.fields[BOOT_DEVICE_VAL] = mk_spinner(strlen(sata0port1), 0, 2, (char**)sata_devs, 2, 1, BG_COLOR);
   } else {
     boot_page.fields[BOOT_DEVICE_VAL] = mk_spinner(strlen(sata0port0), 0, 2, (char**)sata_devs, 2, 0, BG_COLOR);
   }
+
+  if (fru.power_policy>PP_NUM) {
+    fru.power_policy = 0;
+  }
+  boot_page.fields[POWER_POLICY_VAL] = mk_spinner(strlen(pp_off), 0, 4, (char**)power_policies, 3, fru.power_policy, BG_COLOR);
   boot_page.fields[NULL_VAL] = NULL;
   
   boot_page.f = new_form(boot_page.fields);
@@ -95,6 +112,20 @@ boot_save_bootdev(void) {
   //int len = strlen(ptr);
   //memcpy(fru.bootdevice, ptr, (len>FRU_STR_MAX?FRU_STR_MAX:len));
   fru_mrec_update_bootdevice(&fru, (uint8_t *)ptr);
+}
+
+void
+boot_save_power_policy(void) {
+  log("Save power policy\n");
+  int i = 0;
+  char *ptr = field_buffer(boot_page.fields[POWER_POLICY_VAL], 0);
+  for (;i<PP_NUM;i++) {
+    if (ptr == power_policies[i]) {
+      fru_mrec_update_power_policy(&fru, i);
+      return;
+    }
+  }
+  err("Unknown power policy: %s", ptr);
 }
 
 int
@@ -131,7 +162,11 @@ boot_page_process(int ch) {
       if (f == boot_page.fields[BOOT_DEVICE_VAL]) {
         spinner_spin(f);
         boot_save_bootdev();
+      } else if (f == boot_page.fields[POWER_POLICY_VAL]) {
+        spinner_spin(f);
+        boot_save_power_policy();
       }
+
     }
     break;
     /* case RKEY_ESC: */
