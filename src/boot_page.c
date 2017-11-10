@@ -41,9 +41,10 @@ static const char pp_off [] = "always off";
 static const char pp_keep[] = "restore";
 static const char pp_on  [] = "always on";
 
+//fix power policy here
 static const char *power_policies[] = {
   pp_off,
-  pp_keep,
+  //pp_keep,
   pp_on
 };
 
@@ -80,7 +81,8 @@ init_boot_page(void) {
   if (fru.power_policy>PP_NUM) {
     fru.power_policy = 0;
   }
-  boot_page.fields[POWER_POLICY_VAL] = mk_spinner(strlen(pp_off), 0, 4, (char**)power_policies, 3, fru.power_policy, BG_COLOR);
+  //fix power policy here
+  boot_page.fields[POWER_POLICY_VAL] = mk_spinner(strlen(pp_off), 0, 4, (char**)power_policies, PP_NUM-1, (fru.power_policy >= PP_KEEP ? 1 : 0), BG_COLOR);
   boot_page.fields[NULL_VAL] = NULL;
   
   boot_page.f = new_form(boot_page.fields);
@@ -121,6 +123,11 @@ boot_save_power_policy(void) {
   char *ptr = field_buffer(boot_page.fields[POWER_POLICY_VAL], 0);
   for (;i<PP_NUM;i++) {
     if (strncmp(ptr, power_policies[i], strlen(power_policies[i])) == 0) {
+      //fix power policy here
+      if (i == PP_KEEP) {
+        warn("PP_KEEP support is disabled");
+        i = PP_ON;
+      }
       fru_mrec_update_power_policy(&fru, i);
       fru_mrec_update_power_state(&fru);
       return;
