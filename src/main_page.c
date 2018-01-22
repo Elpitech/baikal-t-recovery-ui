@@ -25,6 +25,9 @@
 
 #define LABEL_WIDTH 25
 
+#define SYS_TEMP_PATH "/sys/bus/platform/drivers/pvt-hwmon/1f200000.pvt/temp1_input"
+#define SYS_COREV_PATH "/sys/bus/platform/drivers/pvt-hwmon/1f200000.pvt/in1_input"
+
 enum BMC_BOOTREASON {
   BR_UNKNOWN=0,
   BR_NORMAL,
@@ -38,6 +41,8 @@ enum fields_col1 {
   TESTOK_VAL,
   TIME_VAL,
   DATE_VAL,
+  TEMP_VAL,
+  VOLTAGE_VAL,
   SHRED_VAL,
   BMC_PROTO_VAL,
   RFS_VAL,
@@ -73,6 +78,8 @@ static struct {
   uint32_t shred;
   char shred_label[20];
   char time_label[20];
+  char temp_label[20];
+  char voltage_label[20];
   char mfg_date_label[20];
   char date_label[20];
   char bmc_version_label[20];
@@ -232,6 +239,32 @@ void read_bmc_version(void) {
   }
 }
 
+int
+read_pvt(void) {
+  FILE * pvt_temp_file = fopen(SYS_TEMP_PATH, "r");
+  if (pvt_temp_file == NULL) {
+    err("Failed to open %s\n", SYS_TEMP_PATH);
+    sprintf(main_page.temp_label, "%.3f", 0.0f);
+    return -1;
+  }
+  int pvt_temp = 0;
+  fscanf(pvt_temp_file, "%i", &pvt_temp);
+  fclose(pvt_temp_file);
+  sprintf(main_page.temp_label, "%.3f Deg.C", ((float)pvt_temp)/1000.0f);
+
+  FILE * pvt_core_voltage_file = fopen(SYS_COREV_PATH, "r");
+  if (pvt_core_voltage_file == NULL) {
+    err("Failed to open %s\n", SYS_COREV_PATH);
+    sprintf(main_page.voltage_label, "%.3f", 0.0f);
+    return -2;
+  }
+  int pvt_corev = 0;
+  fscanf(pvt_core_voltage_file, "%i", &pvt_corev);
+  fclose(pvt_core_voltage_file);
+  sprintf(main_page.voltage_label, "%.3f V", ((float)pvt_corev)/1000.0f);
+  return 0;
+}
+
 void
 init_main_page(void) {
   int width, height;
@@ -252,6 +285,7 @@ init_main_page(void) {
   log("shred: 0x%08x\n", main_page.shred);
   t = time(NULL);
   tm = *localtime(&t);
+  read_pvt();
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Boot status");
 
@@ -292,6 +326,16 @@ init_main_page(void) {
   sprintf(main_page.date_label, "%02i-%02i-%04i", tm.tm_mday, tm.tm_mon+1, tm.tm_year + 1900);
   log("date field len: %i\n", strlen(main_page.date_label));
 	main_page.fields_col1[DATE_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.date_label, PAGE_COLOR);
+  y+=2;
+
+  mvwaddstr(main_page.wp.w, y+2, 2, "Core temperature");
+  log("temp field len: %i\n", strlen(main_page.temp_label));
+	main_page.fields_col1[TEMP_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.temp_label, PAGE_COLOR);
+  y+=2;
+
+  mvwaddstr(main_page.wp.w, y+2, 2, "Core voltage");
+  log("voltage field len: %i\n", strlen(main_page.voltage_label));
+	main_page.fields_col1[VOLTAGE_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.voltage_label, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "SHRED");
@@ -422,14 +466,16 @@ main_page_process(int ch) {
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
     curs_set(0);
-    
+
     sprintf(main_page.time_label, "%02i:%02i:%02i UTC", tm.tm_hour, tm.tm_min, tm.tm_sec);
     set_field_buffer(main_page.fields_col1[TIME_VAL], 0, main_page.time_label);
     sprintf(main_page.date_label, "%02i-%02i-%04i", tm.tm_mday, tm.tm_mon+1, tm.tm_year + 1900);
     set_field_buffer(main_page.fields_col1[DATE_VAL], 0, main_page.date_label);
-    //redrawwin(main_page.sw);
-    //redrawwin(main_page.wp.w);
-    //wnoutrefresh(main_page.sw);
+
+    read_pvt();
+    set_field_buffer(main_page.fields_col1[TEMP_VAL], 0, main_page.temp_label);
+    set_field_buffer(main_page.fields_col1[VOLTAGE_VAL], 0, main_page.voltage_label);
+
     wnoutrefresh(main_page.wp.w);
   }
   return 0;

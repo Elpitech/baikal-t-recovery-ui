@@ -1,8 +1,13 @@
 CROSS_COMPILE ?=
 CROSS_ROOT?=
 PREFIX ?= .
+BOARD ?= mitx4
+VALID_BOARDS=mitx4
+ifeq ($(BOARD), mitx4)
+	CFLAGS += -DBOARD_MITX4
+endif
 CC = $(CROSS_COMPILE)gcc
-CFLAGS = -Wall -I$(CROSS_ROOT)/usr/include -DRECOVERY -DDEBUG -DFRU_DEBUG -D_GNU_SOURCE
+CFLAGS += -Wall -I$(CROSS_ROOT)/usr/include -DRECOVERY -DDEBUG -DFRU_DEBUG -D_GNU_SOURCE
 #LDFLAGS = -L$(CROSS_ROOT)/usr/lib -lpanelw -lncursesw -ltinfow -lmenuw
 REAL_DEVICES ?= no
 FAKE_SHRED = 0x80000002

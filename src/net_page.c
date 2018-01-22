@@ -18,7 +18,6 @@
 #define TAG "NET_PAGE"
 
 #define LABEL_WIDTH 25
-
 enum mac_fields {
   MAC0_VAL,
   MAC1_VAL,
@@ -26,6 +25,20 @@ enum mac_fields {
   MAC3_VAL,
   MAC4_VAL,
   MAC5_VAL,
+#if ! defined(BOARD_MITX4)
+  MAC10_VAL,
+  MAC11_VAL,
+  MAC12_VAL,
+  MAC13_VAL,
+  MAC14_VAL,
+  MAC15_VAL,
+  MAC20_VAL,
+  MAC21_VAL,
+  MAC22_VAL,
+  MAC23_VAL,
+  MAC24_VAL,
+  MAC25_VAL,
+#endif
   NULL_VAL,
   N_FIELDS=NULL_VAL
 };
@@ -34,7 +47,9 @@ static struct {
   struct window_params wp;
   WINDOW *sw;
   uint32_t shred;
-  char mac_val[LABEL_WIDTH];
+  char mac0_val[LABEL_WIDTH];
+  char mac1_val[LABEL_WIDTH];
+  char mac2_val[LABEL_WIDTH];
   FIELD *fields[N_FIELDS+1];
 	FORM  *f;
 } net_page;
@@ -52,13 +67,32 @@ init_net_page(void) {
   getmaxyx(net_page.wp.w, height, width);
   (void)height;
 
-  //net_page.fields[MAC_LABEL] = mk_label(LABEL_WIDTH, 0, MAC_LABEL, "MAC address", PAGE_COLOR);
+#if defined(BOARD_MITX4)
   mvwaddstr(net_page.wp.w, 2, 2, "MAC address");
-  memset(net_page.mac_val, 0, LABEL_WIDTH);
-  for (;i<6; i++) {
-    sprintf(net_page.mac_val+3*i, "%02x", fru.mac[i]);
-    net_page.fields[MAC0_VAL+i] = mk_editable_field_regex(2, 3*i, 0, net_page.mac_val+3*i, "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR);
+#else
+  mvwaddstr(net_page.wp.w, 2, 2, "MAC0 address");
+#endif
+  memset(net_page.mac0_val, 0, LABEL_WIDTH);
+  for (i=0;i<6; i++) {
+    sprintf(net_page.mac0_val+3*i, "%02x", fru.mac0[i]);
+    net_page.fields[MAC0_VAL+i] = mk_editable_field_regex(2, 3*i, 0, net_page.mac0_val+3*i, "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR);
   }
+
+#if ! defined(BOARD_MITX4)
+  mvwaddstr(net_page.wp.w, 4, 2, "MAC1 address");
+  memset(net_page.mac1_val, 0, LABEL_WIDTH);
+  for (i=0;i<6; i++) {
+    sprintf(net_page.mac1_val+3*i, "%02x", fru.mac1[i]);
+    net_page.fields[MAC10_VAL+i] = mk_editable_field_regex(2, 3*i, 2, net_page.mac1_val+3*i, "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR);
+  }
+  mvwaddstr(net_page.wp.w, 6, 2, "MAC2 address");
+  memset(net_page.mac2_val, 0, LABEL_WIDTH);
+  for (i=0;i<6; i++) {
+    sprintf(net_page.mac2_val+3*i, "%02x", fru.mac2[i]);
+    net_page.fields[MAC20_VAL+i] = mk_editable_field_regex(2, 3*i, 4, net_page.mac2_val+3*i, "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR);
+  }
+
+#endif
 
   net_page.fields[NULL_VAL] = NULL;
   
@@ -76,31 +110,32 @@ init_net_page(void) {
 }
 
 void
-net_save_mac(void) {
+net_save_mac(int iface) {
+  enum mac_fields first = MAC0_VAL+iface*6;
   uint8_t mac[6] = {0};
   int temp = 0;
-  sscanf(field_buffer(net_page.fields[MAC0_VAL], 0), "%02x", &temp);
+  sscanf(field_buffer(net_page.fields[first], 0), "%02x", &temp);
   mac[0] = temp&0xff;
   temp = 0;
-  sscanf(field_buffer(net_page.fields[MAC1_VAL], 0), "%02x", &temp);
+  sscanf(field_buffer(net_page.fields[first+1], 0), "%02x", &temp);
   mac[1] = temp&0xff;
   temp = 0;
-  sscanf(field_buffer(net_page.fields[MAC2_VAL], 0), "%02x", &temp);
+  sscanf(field_buffer(net_page.fields[first+2], 0), "%02x", &temp);
   mac[2] = temp&0xff;
   temp = 0;
-  sscanf(field_buffer(net_page.fields[MAC3_VAL], 0), "%02x", &temp);
+  sscanf(field_buffer(net_page.fields[first+3], 0), "%02x", &temp);
   mac[3] = temp&0xff;
   temp = 0;
-  sscanf(field_buffer(net_page.fields[MAC4_VAL], 0), "%02x", &temp);
+  sscanf(field_buffer(net_page.fields[first+4], 0), "%02x", &temp);
   mac[4] = temp&0xff;
   temp = 0;
-  sscanf(field_buffer(net_page.fields[MAC5_VAL], 0), "%02x", &temp);
+  sscanf(field_buffer(net_page.fields[first+5], 0), "%02x", &temp);
   mac[5] = temp&0xff;
   temp = 0;
 
   log("Save MAC: [%02x:%02x:%02x:%02x:%02x:%02x]\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   //memcpy(fru.mac, mac, 6);
-  fru_mrec_update_mac(&fru, mac);
+  fru_mrec_update_mac(&fru, mac, iface);
 }
 
 int
@@ -109,39 +144,26 @@ net_page_process(int ch) {
     curs_set(1);
     switch (ch) {
     case KEY_DOWN:
-      //if (pages_params.exclusive == P_NET) {
       form_driver(net_page.f, REQ_NEXT_FIELD);
-      //form_driver(net_page.f, REQ_END_LINE);
-      //}
       break;
     case KEY_UP:
-      //if (pages_params.exclusive == P_NET) {
       form_driver(net_page.f, REQ_PREV_FIELD);
-      //form_driver(net_page.f, REQ_END_LINE);
-      //}
       break;
 		case KEY_BACKSPACE:
 		case 127:
-      //if (pages_params.exclusive == P_NET) {
       form_driver(net_page.f, REQ_DEL_PREV);
-      //}
       break;
     case KEY_DC:
-      //if (pages_params.exclusive == P_NET) {
       form_driver(net_page.f, REQ_DEL_CHAR);
-      //}
 			break;
     case RKEY_ENTER://KEY_ENTER:
-      //pages_params.exclusive = P_NET;
-      //log("Set exclusive [%i]\n", pages_params.exclusive);
-      net_save_mac();
+      net_save_mac(0);
+#if ! defined(BOARD_MITX4)
+      net_save_mac(1);
+      net_save_mac(2);
+#endif
       break;
     case RKEY_ESC:
-      //if (pages_params.exclusive == P_NET) {
-      //net_save_mac();
-      //pages_params.exclusive = P_NONE;
-      //log("Set exclusive [%i]\n", pages_params.exclusive);
-      //}
       break;
     default:
       form_driver(net_page.f, ch);
