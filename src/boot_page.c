@@ -18,6 +18,8 @@
 #include "top_menu.h"
 #include "fru.h"
 
+#define BMC_MIN_VERSION_PP (2<<16 | 1)
+
 #define TAG "BOOT_PAGE"
 
 #define LABEL_WIDTH 25
@@ -58,7 +60,11 @@ static struct {
 void
 init_boot_page(void) {
   int width, height;
-  boot_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
+  uint32_t bmc_version = 0;
+  bmc_version |= pages_params.bmc_version[0]<<16;
+  bmc_version |= pages_params.bmc_version[1]<<8;
+  bmc_version |= pages_params.bmc_version[2];
+  boot_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);
   box(boot_page.wp.w, 0, 0);
   wbkgd(boot_page.wp.w, PAGE_COLOR);
 
@@ -78,12 +84,17 @@ init_boot_page(void) {
     boot_page.fields[BOOT_DEVICE_VAL] = mk_spinner(strlen(sata0port0), 0, 2, (char**)sata_devs, 2, 0, BG_COLOR);
   }
 
-  if (fru.power_policy>PP_NUM) {
-    fru.power_policy = 0;
+  if (bmc_version > BMC_MIN_VERSION_PP) {
+    if (fru.power_policy>PP_NUM) {
+      fru.power_policy = 0;
+    }
+    //fix power policy here
+    boot_page.fields[POWER_POLICY_VAL] = mk_spinner(strlen(pp_off), 0, 4, (char**)power_policies, PP_NUM-1, (fru.power_policy >= PP_KEEP ? 1 : 0), BG_COLOR);
+    boot_page.fields[NULL_VAL] = NULL;
+  } else {
+    mvwaddstr(boot_page.wp.w, 6, LABEL_WIDTH, "N/A");
+    boot_page.fields[POWER_POLICY_VAL] = NULL;
   }
-  //fix power policy here
-  boot_page.fields[POWER_POLICY_VAL] = mk_spinner(strlen(pp_off), 0, 4, (char**)power_policies, PP_NUM-1, (fru.power_policy >= PP_KEEP ? 1 : 0), BG_COLOR);
-  boot_page.fields[NULL_VAL] = NULL;
   
   boot_page.f = new_form(boot_page.fields);
   scale_form(boot_page.f, &height, &width);
@@ -119,25 +130,36 @@ boot_save_bootdev(void) {
 void
 boot_save_power_policy(void) {
   log("Save power policy\n");
-  int i = 0;
-  char *ptr = field_buffer(boot_page.fields[POWER_POLICY_VAL], 0);
-  for (;i<PP_NUM;i++) {
-    if (strncmp(ptr, power_policies[i], strlen(power_policies[i])) == 0) {
-      //fix power policy here
-      if (i == PP_KEEP) {
-        warn("PP_KEEP support is disabled");
-        i = PP_ON;
+  uint32_t bmc_version = 0;
+  bmc_version |= pages_params.bmc_version[0]<<16;
+  bmc_version |= pages_params.bmc_version[1]<<8;
+  bmc_version |= pages_params.bmc_version[2];
+  if (bmc_version > BMC_MIN_VERSION_PP) {
+    int i = 0;
+    char *ptr = field_buffer(boot_page.fields[POWER_POLICY_VAL], 0);
+    for (;i<PP_NUM;i++) {
+      if (strncmp(ptr, power_policies[i], strlen(power_policies[i])) == 0) {
+        //fix power policy here
+        if (i == PP_KEEP) {
+          warn("PP_KEEP support is disabled");
+          i = PP_ON;
+        }
+        fru_mrec_update_power_policy(&fru, i);
+        fru_mrec_update_power_state(&fru);
+        return;
       }
-      fru_mrec_update_power_policy(&fru, i);
-      fru_mrec_update_power_state(&fru);
-      return;
     }
+    err("Unknown power policy: %s", ptr);
   }
-  err("Unknown power policy: %s", ptr);
 }
 
 int
 boot_page_process(int ch) {
+  uint32_t bmc_version = 0;
+  bmc_version |= pages_params.bmc_version[0]<<16;
+  bmc_version |= pages_params.bmc_version[1]<<8;
+  bmc_version |= pages_params.bmc_version[2];
+
   if (!boot_page.wp.hidden) {
     curs_set(1);
     switch (ch) {
@@ -170,21 +192,12 @@ boot_page_process(int ch) {
       if (f == boot_page.fields[BOOT_DEVICE_VAL]) {
         spinner_spin(f);
         boot_save_bootdev();
-      } else if (f == boot_page.fields[POWER_POLICY_VAL]) {
+      } else if ((bmc_version > BMC_MIN_VERSION_PP) && (f == boot_page.fields[POWER_POLICY_VAL])) {
         spinner_spin(f);
         boot_save_power_policy();
       }
-
     }
     break;
-    /* case RKEY_ESC: */
-    /*   if (pages_params.exclusive == P_BOOT) { */
-    /*     form_driver(boot_page.f, REQ_VALIDATION); */
-    /*     boot_save_bootdev(); */
-    /*     pages_params.exclusive = P_NONE; */
-    /*     log("Set exclusive [%i]\n", pages_params.exclusive); */
-    /*   } */
-    /*   break; */
     default:
       form_driver(boot_page.f, ch);
       break;
