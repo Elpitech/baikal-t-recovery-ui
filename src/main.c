@@ -73,14 +73,10 @@ int main(void) {
   update_panels();
   pages_params.exclusive = P_NONE;
   pages_params.int_recovery_valid = false;
-  pages_params.start_int_recovery = false;
+  pages_params.start = START_NONE;
   pages_params.ext_recovery_valid = false;
-  pages_params.start_ext_recovery = false;
 
-
-	while((esc <= 2) &&
-        (!pages_params.start_int_recovery) &&
-        (!pages_params.start_ext_recovery)) {
+	while((esc <= 2) && (pages_params.start == START_NONE)) {
     ch = wgetch(stdscr);
     if (ch != ERR) {
       log("CH: 0x%08x\n", ch);
@@ -90,47 +86,30 @@ int main(void) {
         //esc ++;
       }
     }
-    //if (pages_params.exclusive == P_NONE) {
-      switch (ch) {
-      case RKEY_F10:
-        update_eeprom = true;
-        esc = 10;
-        break;
-      case RKEY_F6:
-        //fru_update_mrec_eeprom();
-        esc = 10;
-        break;
-      }
-      //}
-
-      //if (pages_params.exclusive == P_NONE) {
-      if (top_menu_process(ch)!=0) {
-        continue;
-      }
-      //}
-      //if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_MAIN)) {
-      if (main_page_process(ch)!=0) {
-        continue;
-      }
-      //}
-      //if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_NET)) {
-      if (net_page_process(ch)!=0) {
-        continue;
-      }
-      //}
-      //if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_BOOT)) {
-      if (boot_page_process(ch)!=0) {
-        continue;
-      }
-      //}
-      //if ((pages_params.exclusive == P_NONE) || (pages_params.exclusive == P_RECOVERY)) {
-      if (recovery_page_process(ch)!=0) {
-        continue;
-      }
-      //}
-
-    //refresh();
-    //wrefresh(windows[0]);
+    switch (ch) {
+    case RKEY_F10:
+      update_eeprom = true;
+      esc = 10;
+      break;
+    case RKEY_F6:
+      esc = 10;
+      break;
+    }
+    if (top_menu_process(ch)!=0) {
+      continue;
+    }
+    if (main_page_process(ch)!=0) {
+      continue;
+    }
+    if (net_page_process(ch)!=0) {
+      continue;
+    }
+    if (boot_page_process(ch)!=0) {
+      continue;
+    }
+    if (recovery_page_process(ch)!=0) {
+      continue;
+    }
     update_panels();
     doupdate();
   }
@@ -143,11 +122,21 @@ int main(void) {
 	endwin();			/* End curses mode		  */
   setvbuf(stdout, NULL, _IOLBF, 0);
   setvbuf(stderr, NULL, _IONBF, 0);
-  if (pages_params.start_ext_recovery) {
+  switch (pages_params.start) {
+  case START_EXT:
     execl("/bin/ash", "ash", EXT_RECOVERY_PATH, pages_params.ext_recovery_tar_path, pages_params.ext_recovery_mdev, NULL);
-  } else if (pages_params.start_int_recovery) {
+    break;
+  case START_INT:
     execl("/bin/ash", "ash", INT_RECOVERY_PATH, pages_params.int_recovery_tar_path, pages_params.int_recovery_mdev, NULL);
-  } else if (update_eeprom) {
+    break;
+  case START_ROM_UP:
+    execl("/bin/ash", "ash", ROM_UPDATE_SCRIPT_PATH, UPDATE_ROM_PATH, NULL);
+    break;
+  case START_ROM_DOWN:
+    execl("/bin/ash", "ash", ROM_DOWNLOAD_SCRIPT_PATH, pages_params.rom_url, NULL);
+    break;
+  }
+  if (update_eeprom) {
     int i = 0;
     fru_update_mrec_eeprom();
     printf("Saving ");

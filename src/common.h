@@ -26,13 +26,17 @@ struct spinner_arg {
   char **strs;
 };
 
-#define INT_RECOVERY_PATH "/tmp/int/recovery.rc"
-#define INT_RECOVERY_TAR_PATH "/tmp/int/recovery-tar-path"
-#define INT_RECOVERY_MDEV "/tmp/int/recovery-mdev"
-#define INT_RECOVERY_LINE "/tmp/int/line"
-#define EXT_RECOVERY_PATH "/tmp/recovery.rc"
-#define EXT_RECOVERY_TAR_PATH "/tmp/recovery-tar-path"
-#define EXT_RECOVERY_MDEV "/tmp/recovery-mdev"
-#define EXT_RECOVERY_LINE "/tmp/line"
+#define VAR_PREFIX               "/var/run/recoveryui/"
+#define INT_RECOVERY_PATH        "/var/run/recoveryui/int/recovery.rc"
+#define INT_RECOVERY_TAR_PATH    "/var/run/recoveryui/int/recovery-tar-path"
+#define INT_RECOVERY_MDEV        "/var/run/recoveryui/int/recovery-mdev"
+#define INT_RECOVERY_LINE        "/var/run/recoveryui/int/line"
+#define EXT_RECOVERY_PATH        "/var/run/recoveryui/ext/recovery.rc"
+#define EXT_RECOVERY_TAR_PATH    "/var/run/recoveryui/ext/recovery-tar-path"
+#define EXT_RECOVERY_MDEV        "/var/run/recoveryui/ext/recovery-mdev"
+#define EXT_RECOVERY_LINE        "/var/run/recoveryui/ext/line"
+#define UPDATE_ROM_PATH          "/var/run/recoveryui/update.rom"
+#define ROM_UPDATE_SCRIPT_PATH   "/usr/bin/btflash.sh"
+#define ROM_DOWNLOAD_SCRIPT_PATH "/usr/bin/getrom.sh"
 
 #endif/*__COMMON_H__*/

@@ -15,7 +15,16 @@ enum PAGES {
   P_RECOVERY
 };
 
+enum START {
+  START_NONE=0,
+  START_EXT,
+  START_INT,
+  START_ROM_UP,
+  START_ROM_DOWN
+};
+
 #define RECOVERY_NAME_SIZE 256
+#define ROM_URL_SIZE 1024
 struct pages {
   int exclusive;
   char int_recovery_tar_path[RECOVERY_NAME_SIZE];
@@ -23,9 +32,10 @@ struct pages {
   bool int_recovery_valid;
   char ext_recovery_tar_path[RECOVERY_NAME_SIZE];
   char ext_recovery_mdev[RECOVERY_NAME_SIZE];
+  char rom_url[ROM_URL_SIZE];
   bool ext_recovery_valid;
-  bool start_ext_recovery;
-  bool start_int_recovery;
+  bool rom_valid;
+  enum START start;
   int bmc_version[3];
   uint8_t boot_reason[2];
 };

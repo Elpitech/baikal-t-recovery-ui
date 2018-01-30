@@ -21,17 +21,25 @@
 #include "fru.h"
 
 #define TAG "RECOVERY_PAGE"
-#define RECOVERY_OPTIONS "Recovery options"
+#define RECOVERY_OPTIONS     "Recovery options"
 #define EXT_REC_TXT_NOTFOUND "      USB recovery image not found"
-#define EXT_REC_TXT_FOUND " Press enter to start recovery from USB"
-#define INT_REC_TXT_NOTFOUND "            No other options"
-#define INT_REC_TXT_FOUND " Press enter to start recovery from disk"
+#define EXT_REC_TXT_FOUND    " Press enter to start recovery from USB"
+#define INT_REC_TXT_NOTFOUND "           Backup not found"
+#define INT_REC_TXT_FOUND    " Press enter to start recovery from disk"
+#define ROM_FOUND            "     Press enter to start rom update"
+#define ROM_NOTFOUND         "        ROM update image not found"
+#define ROM_DOWNLOAD         "            Download ROM update"
 
 #define LABEL_WIDTH 40
+#define KB 1024
+#define MB (1024*KB)
 
 enum fields {
   EXT_RECOVERY_LABEL = 0,
   INT_RECOVERY_LABEL,
+  ROM_UPDATE_LABEL,
+  ROM_URL_LABEL,
+  ROM_DOWNLOAD_LABEL,
   NULL_VAL,
   N_FIELDS=NULL_VAL
 };
@@ -41,6 +49,7 @@ static struct {
   WINDOW *sw;
   FIELD *fields[N_FIELDS+1];
 	FORM  *f;
+  char url[ROM_URL_SIZE];
 } recovery_page;
 
 void
@@ -135,6 +144,28 @@ check_recovery(char *tar_path, char *recovery_path, char *recovery_mdev, char *r
 }
 
 void
+check_rom(char *rom_path, enum fields label) {
+  struct stat st;
+  int ret = 0;
+  
+  ret = stat(rom_path, &st);
+  pages_params.rom_valid = false;
+  if (ret < 0) {
+    log("Failed to stat %s: %i, errno: %s\n", rom_path, ret, strerror(errno));
+    set_field_buffer(recovery_page.fields[label], 0, ROM_NOTFOUND);
+    return;
+  }
+  log("ROM update found, checking size\n");
+  if ((16*MB)!=st.st_size) {
+    err("ROM size is wrong: %lli instead of %i\n", st.st_size, 16*MB);
+    set_field_buffer(recovery_page.fields[label], 0, ROM_NOTFOUND);
+    return;
+  }
+  pages_params.rom_valid = true;
+  set_field_buffer(recovery_page.fields[label], 0, ROM_FOUND);
+}
+
+void
 check_ext_recovery(void) {
   check_recovery(EXT_RECOVERY_TAR_PATH, EXT_RECOVERY_PATH, EXT_RECOVERY_MDEV, EXT_RECOVERY_LINE, EXT_RECOVERY_LABEL, false);
 }
@@ -147,6 +178,7 @@ check_int_recovery(void) {
 void
 init_recovery_page(void) {
   int width, height;
+  memset(recovery_page.url, 0, ROM_URL_SIZE);
   recovery_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
   box(recovery_page.wp.w, 0, 0);
   wbkgd(recovery_page.wp.w, PAGE_COLOR);
@@ -159,6 +191,9 @@ init_recovery_page(void) {
   mvwaddstr(recovery_page.wp.w, 2, 2, RECOVERY_OPTIONS);
   recovery_page.fields[EXT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, EXT_RECOVERY_LABEL, EXT_REC_TXT_NOTFOUND, BG_COLOR);
   recovery_page.fields[INT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, INT_RECOVERY_LABEL*2, INT_REC_TXT_NOTFOUND, BG_COLOR);
+  recovery_page.fields[ROM_UPDATE_LABEL] = mk_label(LABEL_WIDTH, 0, ROM_UPDATE_LABEL*2, ROM_NOTFOUND, BG_COLOR);
+  recovery_page.fields[ROM_URL_LABEL] = mk_editable_field_regex(LABEL_WIDTH, 0, ROM_URL_LABEL*2, recovery_page.url, ".*", BG_COLOR);
+  recovery_page.fields[ROM_DOWNLOAD_LABEL] = mk_label(LABEL_WIDTH, 0, ROM_DOWNLOAD_LABEL*2, ROM_DOWNLOAD, BG_COLOR);
   recovery_page.fields[NULL_VAL] = NULL;
   
   recovery_page.f = new_form(recovery_page.fields);
@@ -185,6 +220,7 @@ recovery_page_process(int ch) {
       last_t = cur_t;
       check_ext_recovery();
       check_int_recovery();
+      check_rom(UPDATE_ROM_PATH, ROM_UPDATE_LABEL);
     }
     switch (ch) {
     case RKEY_ENTER://KEY_ENTER:
@@ -193,20 +229,31 @@ recovery_page_process(int ch) {
       FIELD *f = current_field(recovery_page.f);
       if (f == recovery_page.fields[EXT_RECOVERY_LABEL]) {
         if (pages_params.ext_recovery_valid) {
-          pages_params.start_ext_recovery = true;
-          pages_params.start_int_recovery = false;
+          pages_params.start = START_EXT;
           log("Set start external recovery flag\n");
         } else {
           log("Recovery is not considered valid\n");
         }
       } else if (f == recovery_page.fields[INT_RECOVERY_LABEL]) {
         if (pages_params.int_recovery_valid) {
-          pages_params.start_int_recovery = true;
-          pages_params.start_ext_recovery = false;
+          pages_params.start = START_INT;
           log("Set start internal recovery flag\n");
         } else {
           log("Recovery is not considered valid\n");
         }
+      } else if (f == recovery_page.fields[ROM_UPDATE_LABEL]) {
+        if (pages_params.rom_valid) {
+          pages_params.start = START_ROM_UP;
+          log("Set start rom update flag\n");
+        } else {
+          log("ROM is not considered valid\n");
+        }
+      } else if (f == recovery_page.fields[ROM_DOWNLOAD_LABEL]) {
+        char *buf = field_buffer(recovery_page.fields[ROM_URL_LABEL], 0);
+        //int len = strlen(buf);
+        memcpy(pages_params.rom_url, buf, ROM_URL_SIZE);
+        pages_params.start = START_ROM_DOWN;
+        log("Set start rom download flag\n");
       }
     }
     break;
@@ -215,6 +262,16 @@ recovery_page_process(int ch) {
       break;
     case KEY_UP:
       form_driver(recovery_page.f, REQ_PREV_FIELD);
+      break;
+    case KEY_BACKSPACE:
+		case 127:
+      form_driver(recovery_page.f, REQ_DEL_PREV);
+      break;
+    case KEY_DC:
+      form_driver(recovery_page.f, REQ_DEL_CHAR);
+			break;
+    default:
+      form_driver(recovery_page.f, ch);
       break;
     }
 
