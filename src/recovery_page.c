@@ -21,16 +21,16 @@
 #include "fru.h"
 
 #define TAG "RECOVERY_PAGE"
-#define RECOVERY_OPTIONS     "Recovery options"
-#define EXT_REC_TXT_NOTFOUND "      USB recovery image not found"
-#define EXT_REC_TXT_FOUND    " Press enter to start recovery from USB"
-#define INT_REC_TXT_NOTFOUND "           Backup not found"
-#define INT_REC_TXT_FOUND    " Press enter to start recovery from disk"
-#define ROM_FOUND            "     Press enter to start rom update"
-#define ROM_NOTFOUND         "        ROM update image not found"
-#define ROM_DOWNLOAD         "            Download ROM update"
+//                           |                         |
+#define EXT_REC_TXT_NOTFOUND "        Not found"
+#define EXT_REC_TXT_FOUND    "      Start recovery"
+#define INT_REC_TXT_NOTFOUND "        Not found"
+#define INT_REC_TXT_FOUND    "      Start recovery"
+#define ROM_NOTFOUND         "        Not found"
+#define ROM_FOUND            "       Start update"
+#define ROM_DOWNLOAD         "      Start download"
 
-#define LABEL_WIDTH 40
+#define LABEL_WIDTH 25
 #define KB 1024
 #define MB (1024*KB)
 
@@ -188,18 +188,22 @@ init_recovery_page(void) {
   getmaxyx(recovery_page.wp.w, height, width);
   (void)height;
 
-  mvwaddstr(recovery_page.wp.w, 2, 2, RECOVERY_OPTIONS);
+  mvwaddstr(recovery_page.wp.w, EXT_RECOVERY_LABEL*2+2, 2, "USB recovery");
   recovery_page.fields[EXT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, EXT_RECOVERY_LABEL, EXT_REC_TXT_NOTFOUND, BG_COLOR);
+  mvwaddstr(recovery_page.wp.w, INT_RECOVERY_LABEL*2+2, 2, "Restore backup");
   recovery_page.fields[INT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, INT_RECOVERY_LABEL*2, INT_REC_TXT_NOTFOUND, BG_COLOR);
+  mvwaddstr(recovery_page.wp.w, ROM_UPDATE_LABEL*2+2, 2, "Update ROM");
   recovery_page.fields[ROM_UPDATE_LABEL] = mk_label(LABEL_WIDTH, 0, ROM_UPDATE_LABEL*2, ROM_NOTFOUND, BG_COLOR);
+  mvwaddstr(recovery_page.wp.w, ROM_URL_LABEL*2+2, 2, "ROM URL");
   recovery_page.fields[ROM_URL_LABEL] = mk_editable_field_regex(LABEL_WIDTH, 0, ROM_URL_LABEL*2, recovery_page.url, ".*", BG_COLOR);
+  mvwaddstr(recovery_page.wp.w, ROM_DOWNLOAD_LABEL*2+2, 2, "Download ROM");
   recovery_page.fields[ROM_DOWNLOAD_LABEL] = mk_label(LABEL_WIDTH, 0, ROM_DOWNLOAD_LABEL*2, ROM_DOWNLOAD, BG_COLOR);
   recovery_page.fields[NULL_VAL] = NULL;
   
   recovery_page.f = new_form(recovery_page.fields);
   scale_form(recovery_page.f, &height, &width);
   set_form_win(recovery_page.f, recovery_page.wp.w);
-  recovery_page.sw = derwin(recovery_page.wp.w, height, width, 4, 2);
+  recovery_page.sw = derwin(recovery_page.wp.w, height, LABEL_WIDTH, 2, LABEL_WIDTH);
   set_form_sub(recovery_page.f, recovery_page.sw);
 
   post_form(recovery_page.f);
@@ -207,8 +211,6 @@ init_recovery_page(void) {
   redrawwin(recovery_page.wp.w);
 
   check_int_recovery();
-	//wnoutrefresh(recovery_page.wp.w);
-  //win_show(, label, 1);
 }
 
 int

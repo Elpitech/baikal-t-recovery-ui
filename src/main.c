@@ -36,7 +36,7 @@ int main(void) {
   //struct timeval tv = { 0L, 500000L };
   //fd_set fds;
 
-  logfile = fopen("/tmp/recovery-ui.log", "w");
+  logfile = fopen("/var/log/recovery-ui.log", "w");
   log("Started log\n");
   log("ttyname: %s\n", ttyname(0));
   
@@ -134,6 +134,11 @@ int main(void) {
     break;
   case START_ROM_DOWN:
     execl("/bin/ash", "ash", ROM_DOWNLOAD_SCRIPT_PATH, pages_params.rom_url, NULL);
+    break;
+  case START_DHCP:
+    execl("/sbin/udhcpc", "udhcpc", NULL);
+    break;
+  default:
     break;
   }
   if (update_eeprom) {
