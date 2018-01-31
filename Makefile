@@ -40,7 +40,7 @@ $(PROJECT): prepare $(OBJECTS)
 
 .PHONY: clean
 clean:
-	rm $(OBJECTS) $(PROJECT)
+	-rm $(OBJECTS) $(PROJECT)
 
 .PHONY: install
 install:
