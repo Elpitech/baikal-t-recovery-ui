@@ -23,12 +23,12 @@
 #define TAG "RECOVERY_PAGE"
 //                           |                         |
 #define EXT_REC_TXT_NOTFOUND "        Not found"
-#define EXT_REC_TXT_FOUND    "      Start recovery"
+#define EXT_REC_TXT_FOUND    "          Start"
 #define INT_REC_TXT_NOTFOUND "        Not found"
-#define INT_REC_TXT_FOUND    "      Start recovery"
+#define INT_REC_TXT_FOUND    "          Start"
 #define ROM_NOTFOUND         "        Not found"
-#define ROM_FOUND            "       Start update"
-#define ROM_DOWNLOAD         "      Start download"
+#define ROM_FOUND            "          Start"
+#define ROM_DOWNLOAD         "          Start"
 
 #define LABEL_WIDTH 25
 #define KB 1024

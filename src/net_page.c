@@ -74,6 +74,7 @@ int
 get_ip_addr(char *buf) {
   struct ifaddrs *ifaddr, *ifa;
   int s;
+  bool correct_value = false;
 
   if (getifaddrs(&ifaddr) == -1) {
     err("getifaddrs failed to obtain IP");
@@ -96,12 +97,16 @@ get_ip_addr(char *buf) {
         memset(buf, 0, NI_MAXHOST);
         return -3;
       }
+      correct_value = true;
       log("\tInterface : <%s>\n", ifa->ifa_name );
       log("\t  Address : <%s>\n", buf); 
     }
   }
   
   freeifaddrs(ifaddr);
+  if (!correct_value) {
+    return -4;
+  }
   return 0;
 }
 
