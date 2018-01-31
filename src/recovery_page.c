@@ -195,7 +195,7 @@ init_recovery_page(void) {
   mvwaddstr(recovery_page.wp.w, ROM_UPDATE_LABEL*2+2, 2, "Update ROM");
   recovery_page.fields[ROM_UPDATE_LABEL] = mk_label(LABEL_WIDTH, 0, ROM_UPDATE_LABEL*2, ROM_NOTFOUND, BG_COLOR);
   mvwaddstr(recovery_page.wp.w, ROM_URL_LABEL*2+2, 2, "ROM URL");
-  recovery_page.fields[ROM_URL_LABEL] = mk_editable_field_regex(LABEL_WIDTH, 0, ROM_URL_LABEL*2, recovery_page.url, ".*", BG_COLOR);
+  recovery_page.fields[ROM_URL_LABEL] = mk_editable_field_regex_ex(LABEL_WIDTH, 0, ROM_URL_LABEL*2, recovery_page.url, ".*", BG_COLOR, false, false, ROM_URL_SIZE-1);
   mvwaddstr(recovery_page.wp.w, ROM_DOWNLOAD_LABEL*2+2, 2, "Download ROM");
   recovery_page.fields[ROM_DOWNLOAD_LABEL] = mk_label(LABEL_WIDTH, 0, ROM_DOWNLOAD_LABEL*2, ROM_DOWNLOAD, BG_COLOR);
   recovery_page.fields[NULL_VAL] = NULL;

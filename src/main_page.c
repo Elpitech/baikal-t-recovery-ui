@@ -154,16 +154,31 @@ mk_label2(int w, int h, int x, int y, char *string, chtype c) {
 }
 
 FIELD *
-mk_editable_field_regex(int w, int x, int y, char *string, char *regex, chtype c) {
+mk_editable_field_regex_ex(int w, int x, int y, char *string, char *regex, chtype c, bool autoskip, bool static_size, int max_growth) {
   FIELD *f = new_field(1, w, y, x, 0, 0);
   set_max_field(f, w);
   set_field_type(f, TYPE_REGEXP, regex);
-  set_field_opts(f, O_VISIBLE | O_PUBLIC | O_EDIT | O_ACTIVE | O_AUTOSKIP | O_BLANK);
-  //field_opts_off(f, O_AUTOSKIP);
+  uint32_t default_opts = O_VISIBLE | O_PUBLIC | O_EDIT | O_ACTIVE | O_BLANK;
+  if (autoskip) {
+    default_opts |= O_AUTOSKIP;
+  }
+  set_field_opts(f, default_opts);
+  if (!static_size) {
+    field_opts_off(f, O_STATIC);
+    set_max_field(f, max_growth);
+  }
+  if (!autoskip) {
+    field_opts_off(f, O_AUTOSKIP);
+  }
   set_field_buffer(f, 0, string);
   set_field_fore(f, c);
   set_field_back(f, c);
   return f;
+}
+
+FIELD *
+mk_editable_field_regex(int w, int x, int y, char *string, char *regex, chtype c) {
+  return mk_editable_field_regex_ex(w, x, y, string, regex, c, true, true, 0);
 }
 
 uint32_t read_shred(void) {
