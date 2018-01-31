@@ -366,7 +366,7 @@ init_main_page(void) {
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Recovery rfs version");
-  FILE *rfs = fopen("/recovery-version", "r");
+  FILE *rfs = fopen("/etc/recovery-version", "r");
   if (rfs != NULL) {
     fread(main_page.rfs_version, sizeof(char), 20, rfs);
     fclose(rfs);
