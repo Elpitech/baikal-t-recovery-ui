@@ -202,13 +202,13 @@ check_rom(const char *rom_path, enum fields label, const char *field_text, bool 
     }
     memset(pages_params.rom_path, 0, ROM_URL_SIZE);
     memcpy(pages_params.rom_path, ptr, strlen(ptr));
+    set_field_buffer(recovery_page.fields[label], 0, field_text);
   }
   if (usb) {
     pages_params.usb_rom_valid = true;
   } else {
     pages_params.web_rom_valid = true;
   }
-  set_field_buffer(recovery_page.fields[label], 0, field_text);
 }
 
 void
