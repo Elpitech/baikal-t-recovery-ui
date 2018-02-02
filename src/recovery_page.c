@@ -271,10 +271,10 @@ recovery_page_load(FILE *f) {
   int l = 0;
   int ret = fscanf(f, "%ms\n", &ptr);
   if (ptr==NULL) {
-    return -1;
+    return 0;
   }
   if (ret != 1) {
-    return -2;
+    return 0;
   }
   l = strlen(ptr);
   if (l>=ROM_URL_SIZE) {

@@ -358,7 +358,7 @@ init_main_page(void) {
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Date");
-  sprintf(main_page.date_label, "%02i-%02i-%04i", tm.tm_mday, tm.tm_mon+1, tm.tm_year + 1900);
+  sprintf(main_page.date_label, "%04i-%02i-%02i", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
   log("date field len: %i\n", strlen(main_page.date_label));
 	main_page.fields_col1[DATE_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.date_label, PAGE_COLOR);
   y+=2;
@@ -504,7 +504,7 @@ main_page_process(int ch) {
 
     sprintf(main_page.time_label, "%02i:%02i:%02i UTC", tm.tm_hour, tm.tm_min, tm.tm_sec);
     set_field_buffer(main_page.fields_col1[TIME_VAL], 0, main_page.time_label);
-    sprintf(main_page.date_label, "%02i-%02i-%04i", tm.tm_mday, tm.tm_mon+1, tm.tm_year + 1900);
+    sprintf(main_page.date_label, "%04i-%02i-%02i", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
     set_field_buffer(main_page.fields_col1[DATE_VAL], 0, main_page.date_label);
 
     read_pvt();
