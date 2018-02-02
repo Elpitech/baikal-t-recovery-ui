@@ -141,9 +141,10 @@ init_net_page(void) {
     sprintf(net_page.mac0_val+3*i, "%02x", fru.mac0[i]);
     net_page.fields[MAC0_VAL+i] = mk_editable_field_regex(2, 3*i, cy-2, net_page.mac0_val+3*i, "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR);
   }
-
   cy+=2;
-#if ! defined(BOARD_MITX4)
+#if defined(BOARD_MITX4)
+  field_opts_off(net_page.fields[MAC5_VAL], O_AUTOSKIP);
+#else
   mvwaddstr(net_page.wp.w, cy, 2, "MAC1 address");
   memset(net_page.mac1_val, 0, LABEL_WIDTH);
   for (i=0;i<6; i++) {
