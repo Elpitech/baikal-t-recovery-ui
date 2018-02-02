@@ -39,6 +39,7 @@ enum BMC_BOOTREASON {
 enum fields_col1 {
   BOOTREASON_VAL=0,
   TESTOK_VAL,
+  TIMESTAT_VAL,
   TIME_VAL,
   DATE_VAL,
   TEMP_VAL,
@@ -119,9 +120,20 @@ spinner_spin(FIELD *f) {
 }
 
 FIELD *
+mk_button(int w, int x, int y, char *string, chtype c) {
+  FIELD *f = new_field(1, w, y, x, 0, 0);
+  field_opts_off(f, O_EDIT);
+  set_field_buffer(f, 0, string);
+  set_field_fore(f, c);
+  set_field_back(f, c);
+  return f;
+}
+
+FIELD *
 mk_label(int w, int x, int y, char *string, chtype c) {
   FIELD *f = new_field(1, w, y, x, 0, 0);
   field_opts_off(f, O_EDIT);
+  field_opts_off(f, O_ACTIVE);
   set_field_buffer(f, 0, string);
   set_field_fore(f, c);
   set_field_back(f, c);
@@ -328,6 +340,14 @@ init_main_page(void) {
   } else {
     main_page.fields_col1[TESTOK_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "UNKNOWN", PAGE_COLOR);
     log("mfg hw test status field len: %i\n", strlen("UNKNOWN"));
+  }
+  y+=2;
+
+  mvwaddstr(main_page.wp.w, y+2, 2, "RTC status");
+  if ((tm.tm_year + 1900)==1970) {
+    main_page.fields_col1[TIMESTAT_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "FAIL", RED_COLOR);
+  } else {
+    main_page.fields_col1[TIMESTAT_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "OK", GREEN_COLOR);
   }
   y+=2;
   

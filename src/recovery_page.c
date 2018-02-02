@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <stdlib.h>
 
 #include <panel.h>
 #include <locale.h>
@@ -27,7 +28,8 @@
 #define INT_REC_TXT_NOTFOUND "        Not found"
 #define INT_REC_TXT_FOUND    "          Start"
 #define ROM_NOTFOUND         "        Not found"
-#define ROM_FOUND            "          Start"
+#define ROM_FOUND_USB        "     Start from USB"
+#define ROM_FOUND_WEB        "     Start from WEB"
 #define ROM_DOWNLOAD         "          Start"
 
 #define LABEL_WIDTH 25
@@ -144,25 +146,69 @@ check_recovery(char *tar_path, char *recovery_path, char *recovery_mdev, char *r
 }
 
 void
-check_rom(char *rom_path, enum fields label) {
+check_rom(const char *rom_path, enum fields label, const char *field_text, bool usb) {
   struct stat st;
   int ret = 0;
-  
+  FILE *f;
+  char *ptr;
+  if (usb) {
+    pages_params.usb_rom_valid = false;
+  } else {
+    pages_params.web_rom_valid = false;
+  }
   ret = stat(rom_path, &st);
-  pages_params.rom_valid = false;
   if (ret < 0) {
     log("Failed to stat %s: %i, errno: %s\n", rom_path, ret, strerror(errno));
-    set_field_buffer(recovery_page.fields[label], 0, ROM_NOTFOUND);
+    if ((!pages_params.usb_rom_valid) && (!pages_params.web_rom_valid)) {
+      set_field_buffer(recovery_page.fields[label], 0, ROM_NOTFOUND);
+    }
+    return;
+  }
+  f = fopen(rom_path, "r");
+  ret = fscanf(f, "%ms", &ptr);
+  fclose(f);
+  if (ret!=1) {
+    if ((!pages_params.usb_rom_valid) && (!pages_params.web_rom_valid)) {
+      set_field_buffer(recovery_page.fields[label], 0, ROM_NOTFOUND);
+    }
+    return;
+  }
+  ret = stat(ptr, &st);
+  if (ret < 0) {
+    log("Failed to stat %s: %i, errno: %s\n", ptr, ret, strerror(errno));
+    if ((!pages_params.usb_rom_valid) && (!pages_params.web_rom_valid)) {
+      set_field_buffer(recovery_page.fields[label], 0, ROM_NOTFOUND);
+    }
+    free(ptr);
     return;
   }
   log("ROM update found, checking size\n");
   if ((16*MB)!=st.st_size) {
     err("ROM size is wrong: %lli instead of %i\n", st.st_size, 16*MB);
-    set_field_buffer(recovery_page.fields[label], 0, ROM_NOTFOUND);
+    if ((!pages_params.usb_rom_valid) && (!pages_params.web_rom_valid)) {
+      set_field_buffer(recovery_page.fields[label], 0, ROM_NOTFOUND);
+    }
+    free(ptr);
     return;
   }
-  pages_params.rom_valid = true;
-  set_field_buffer(recovery_page.fields[label], 0, ROM_FOUND);
+  if ((!pages_params.usb_rom_valid) && (!pages_params.web_rom_valid)) {
+    if (strlen(ptr)>=ROM_URL_SIZE) {
+      err("Path is too large\n");
+      if ((!pages_params.usb_rom_valid) && (!pages_params.web_rom_valid)) {
+        set_field_buffer(recovery_page.fields[label], 0, ROM_NOTFOUND);
+      }
+      free(ptr);
+      return;
+    }
+    memset(pages_params.rom_path, 0, ROM_URL_SIZE);
+    memcpy(pages_params.rom_path, ptr, strlen(ptr));
+  }
+  if (usb) {
+    pages_params.usb_rom_valid = true;
+  } else {
+    pages_params.web_rom_valid = true;
+  }
+  set_field_buffer(recovery_page.fields[label], 0, field_text);
 }
 
 void
@@ -189,15 +235,15 @@ init_recovery_page(void) {
   (void)height;
 
   mvwaddstr(recovery_page.wp.w, EXT_RECOVERY_LABEL*2+2, 2, "USB recovery");
-  recovery_page.fields[EXT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, EXT_RECOVERY_LABEL, EXT_REC_TXT_NOTFOUND, BG_COLOR);
+  recovery_page.fields[EXT_RECOVERY_LABEL] = mk_button(LABEL_WIDTH, 0, EXT_RECOVERY_LABEL, EXT_REC_TXT_NOTFOUND, BG_COLOR);
   mvwaddstr(recovery_page.wp.w, INT_RECOVERY_LABEL*2+2, 2, "Restore backup");
-  recovery_page.fields[INT_RECOVERY_LABEL] = mk_label(LABEL_WIDTH, 0, INT_RECOVERY_LABEL*2, INT_REC_TXT_NOTFOUND, BG_COLOR);
+  recovery_page.fields[INT_RECOVERY_LABEL] = mk_button(LABEL_WIDTH, 0, INT_RECOVERY_LABEL*2, INT_REC_TXT_NOTFOUND, BG_COLOR);
   mvwaddstr(recovery_page.wp.w, ROM_UPDATE_LABEL*2+2, 2, "Update ROM");
-  recovery_page.fields[ROM_UPDATE_LABEL] = mk_label(LABEL_WIDTH, 0, ROM_UPDATE_LABEL*2, ROM_NOTFOUND, BG_COLOR);
+  recovery_page.fields[ROM_UPDATE_LABEL] = mk_button(LABEL_WIDTH, 0, ROM_UPDATE_LABEL*2, ROM_NOTFOUND, BG_COLOR);
   mvwaddstr(recovery_page.wp.w, ROM_URL_LABEL*2+2, 2, "ROM URL");
   recovery_page.fields[ROM_URL_LABEL] = mk_editable_field_regex_ex(LABEL_WIDTH, 0, ROM_URL_LABEL*2, recovery_page.url, ".*", BG_COLOR, false, false, ROM_URL_SIZE-1);
   mvwaddstr(recovery_page.wp.w, ROM_DOWNLOAD_LABEL*2+2, 2, "Download ROM");
-  recovery_page.fields[ROM_DOWNLOAD_LABEL] = mk_label(LABEL_WIDTH, 0, ROM_DOWNLOAD_LABEL*2, ROM_DOWNLOAD, BG_COLOR);
+  recovery_page.fields[ROM_DOWNLOAD_LABEL] = mk_button(LABEL_WIDTH, 0, ROM_DOWNLOAD_LABEL*2, ROM_DOWNLOAD, BG_COLOR);
   recovery_page.fields[NULL_VAL] = NULL;
   
   recovery_page.f = new_form(recovery_page.fields);
@@ -214,15 +260,44 @@ init_recovery_page(void) {
 }
 
 int
+recovery_page_store(FILE *f) {
+  char *url = field_buffer(recovery_page.fields[ROM_URL_LABEL], 0);
+  return fprintf(f, "%s\n", url);
+}
+
+int
+recovery_page_load(FILE *f) {
+  char *ptr;
+  int l = 0;
+  int ret = fscanf(f, "%ms\n", &ptr);
+  if (ptr==NULL) {
+    return -1;
+  }
+  if (ret != 1) {
+    return -2;
+  }
+  l = strlen(ptr);
+  if (l>=ROM_URL_SIZE) {
+    return -3;
+  }
+  memcpy(recovery_page.url, ptr, l);
+  free(ptr);
+  set_field_buffer(recovery_page.fields[ROM_URL_LABEL], 0, recovery_page.url);
+  return 0;
+}
+
+int
 recovery_page_process(int ch) {
   static uint64_t last_t = 0;
   uint64_t cur_t = time(NULL);
   if (!recovery_page.wp.hidden) {
+    curs_set(1);
     if ((cur_t-last_t)>2) {
       last_t = cur_t;
       check_ext_recovery();
       check_int_recovery();
-      check_rom(UPDATE_ROM_PATH, ROM_UPDATE_LABEL);
+      check_rom(USB_UPDATE_ROM_PATH, ROM_UPDATE_LABEL, ROM_FOUND_USB, true);
+      check_rom(WEB_UPDATE_ROM_PATH, ROM_UPDATE_LABEL, ROM_FOUND_WEB, false);
     }
     switch (ch) {
     case RKEY_ENTER://KEY_ENTER:
@@ -244,7 +319,7 @@ recovery_page_process(int ch) {
           log("Recovery is not considered valid\n");
         }
       } else if (f == recovery_page.fields[ROM_UPDATE_LABEL]) {
-        if (pages_params.rom_valid) {
+        if (pages_params.usb_rom_valid || pages_params.web_rom_valid) {
           pages_params.start = START_ROM_UP;
           log("Set start rom update flag\n");
         } else {

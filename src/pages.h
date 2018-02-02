@@ -34,8 +34,10 @@ struct pages {
   char ext_recovery_tar_path[RECOVERY_NAME_SIZE];
   char ext_recovery_mdev[RECOVERY_NAME_SIZE];
   char rom_url[ROM_URL_SIZE];
+  char rom_path[ROM_URL_SIZE];
   bool ext_recovery_valid;
-  bool rom_valid;
+  bool usb_rom_valid;
+  bool web_rom_valid;
   enum START start;
   int bmc_version[3];
   uint8_t boot_reason[2];

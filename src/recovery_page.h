@@ -2,6 +2,8 @@
 #define __RECOVERY_PAGE_H__
 
 void init_recovery_page(void);
+int recovery_page_store(FILE *f);
+int recovery_page_load(FILE *f);
 int recovery_page_process(int ch);
 void deinit_recovery_page(void);
 struct window_params * get_recovery_page_wp(void);

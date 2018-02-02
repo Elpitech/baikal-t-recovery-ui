@@ -1,6 +1,9 @@
 #include <unistd.h>
 #include <sys/reboot.h>
 #include <sys/select.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
 
 #include <panel.h>
 #include <locale.h>
@@ -13,6 +16,7 @@
 #include "common.h"
 #include "top_menu.h"
 #include "main_page.h"
+#include "datetime_page.h"
 #include "boot_page.h"
 #include "net_page.h"
 #include "recovery_page.h"
@@ -27,6 +31,52 @@ struct fru fru_back;
 
 void win_show(WINDOW *win, wchar_t *label, int label_color);
 void print_in_middle(WINDOW *win, int starty, int startx, int width, wchar_t *string, chtype color);
+
+void
+store(void) {
+  int ret;
+  FILE *f;
+  f = fopen(STATE_PATH, "w");
+  if (f == NULL) {
+    return;
+  }
+  ret = top_menu_store(f);
+  if (ret < 0) {
+    return;
+  }
+  ret = recovery_page_store(f);
+  if (ret < 0) {
+    return;
+  }
+  fclose(f);
+}
+
+int
+load(void) {
+  int ret;
+  FILE *f;
+  struct stat st;
+  ret = stat(STATE_PATH, &st);
+  if (ret < 0) {
+    log("Failed to stat %s: %i, errno: %s\n", STATE_PATH, ret, strerror(errno));
+    return -1;
+  }
+  f = fopen(STATE_PATH, "r");
+  if (f == NULL) {
+    return -2;
+  }
+  ret = top_menu_load(f);
+  if (ret != 0) {
+    fclose(f);
+    return -3;
+  }
+  ret = recovery_page_load(f);
+  if (ret != 0) {
+    fclose(f);
+    return -4;
+  }
+  return 0;
+}
 
 
 int main(void) {
@@ -61,15 +111,19 @@ int main(void) {
   init_pair(4, COLOR_BLACK, COLOR_BLACK);
   init_pair(5, COLOR_GREEN, COLOR_WHITE);
   init_pair(6, COLOR_RED, COLOR_WHITE);
+  init_pair(7, COLOR_WHITE, COLOR_RED);
   curs_set(0);
   log("Init done\n");
   
   init_main_page();
+  init_dt_page();
   init_boot_page();
   init_net_page();
   init_recovery_page();
-  init_top_menu(get_main_page_wp(), get_boot_page_wp(), get_net_page_wp(), get_recovery_page_wp());
-  hide_all_panels_except(get_main_page_wp());
+  init_top_menu(get_main_page_wp(), get_dt_page_wp(), get_boot_page_wp(), get_net_page_wp(), get_recovery_page_wp());
+  if (load()!=0) {
+    hide_all_panels_except(get_main_page_wp());
+  }
   update_panels();
   pages_params.exclusive = P_NONE;
   pages_params.int_recovery_valid = false;
@@ -104,6 +158,9 @@ int main(void) {
     if (net_page_process(ch)!=0) {
       continue;
     }
+    if (dt_page_process(ch)!=0) {
+      continue;
+    }
     if (boot_page_process(ch)!=0) {
       continue;
     }
@@ -114,8 +171,11 @@ int main(void) {
     doupdate();
   }
 
+  store();
+
   curs_set(1);
   deinit_net_page();
+  deinit_dt_page();
   deinit_boot_page();
   deinit_main_page();
   deinit_top_menu();
@@ -130,7 +190,7 @@ int main(void) {
     execl("/bin/ash", "ash", INT_RECOVERY_PATH, pages_params.int_recovery_tar_path, pages_params.int_recovery_mdev, NULL);
     break;
   case START_ROM_UP:
-    execl("/bin/ash", "ash", ROM_UPDATE_SCRIPT_PATH, UPDATE_ROM_PATH, NULL);
+    execl("/bin/ash", "ash", ROM_UPDATE_SCRIPT_PATH, pages_params.rom_path, NULL);
     break;
   case START_ROM_DOWN:
     execl("/bin/ash", "ash", ROM_DOWNLOAD_SCRIPT_PATH, pages_params.rom_url, NULL);

@@ -7,6 +7,7 @@
 #define FIELD_COLOR COLOR_PAIR(4)
 #define GREEN_COLOR COLOR_PAIR(5)
 #define RED_COLOR COLOR_PAIR(6)
+#define RED_EDIT_COLOR COLOR_PAIR(7)
 
 #define RKEY_ENTER 0x0a
 #define RKEY_ESC   0x1b
@@ -35,8 +36,10 @@ struct spinner_arg {
 #define EXT_RECOVERY_TAR_PATH    "/var/run/recoveryui/ext/recovery-tar-path"
 #define EXT_RECOVERY_MDEV        "/var/run/recoveryui/ext/recovery-mdev"
 #define EXT_RECOVERY_LINE        "/var/run/recoveryui/ext/line"
-#define UPDATE_ROM_PATH          "/var/run/recoveryui/update.rom"
+#define USB_UPDATE_ROM_PATH      "/var/run/recoveryui/update-rom-path"
+#define WEB_UPDATE_ROM_PATH      "/var/run/recoveryui/web-update-rom-path"
 #define ROM_UPDATE_SCRIPT_PATH   "/usr/bin/btflash.sh"
 #define ROM_DOWNLOAD_SCRIPT_PATH "/usr/bin/getrom.sh"
+#define STATE_PATH               "/var/run/recoveryui/recovery.state"
 
 #endif/*__COMMON_H__*/

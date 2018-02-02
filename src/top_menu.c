@@ -11,20 +11,11 @@
 #include "top_menu.h"
 
 #define TAG "TOP_MENU"
-#define N_ITEMS 4
+#define N_ITEMS 5
 
 #define LABEL_WIDTH 32
 #define xstr(a) str(a)
 #define str(a) #a
-
-/* enum help_fields { */
-/*   NAV_LABEL = 0, */
-/*   NAV_TEXT1, */
-/*   NAV_TEXT2, */
-/*   NAV_TEXT3, */
-/*   H_NULL_VAL, */
-/*   H_N_FIELDS=H_NULL_VAL */
-/* }; */
 
 static struct {
   WINDOW *w;
@@ -42,24 +33,27 @@ static struct {
 } top_menu;
 
 void
-init_top_menu(struct window_params *main, struct window_params *boot, struct window_params *net, struct window_params *rec) {
+init_top_menu(struct window_params *main, struct window_params *dt, struct window_params *boot, struct window_params *net, struct window_params *rec) {
   const char header[] = "T-Platforms mITX recovery";
   top_menu.w = newwin(TOP_MENU_H, TOP_MENU_W, 0, 0);
   wbkgd(top_menu.w, BG_COLOR);
 
   top_menu.items[0] = new_item("Main", "MAIN");
   set_item_userptr(top_menu.items[0], main);
-  
-  top_menu.items[1] = new_item("Boot", "BOOT");
-  set_item_userptr(top_menu.items[1], boot);
-  
-  top_menu.items[2] = new_item("Network", "NET");
-  set_item_userptr(top_menu.items[2], net);
 
-  top_menu.items[3] = new_item("Maintenance", "MAINT");
-  set_item_userptr(top_menu.items[3], rec);
+  top_menu.items[1] = new_item("Date/time", "DT");
+  set_item_userptr(top_menu.items[1], dt);
 
-  top_menu.items[4] = NULL;
+  top_menu.items[2] = new_item("Boot", "BOOT");
+  set_item_userptr(top_menu.items[2], boot);
+  
+  top_menu.items[3] = new_item("Network", "NET");
+  set_item_userptr(top_menu.items[3], net);
+
+  top_menu.items[4] = new_item("Maintenance", "MAINT");
+  set_item_userptr(top_menu.items[4], rec);
+
+  top_menu.items[5] = NULL;
   top_menu.m = new_menu((ITEM **)top_menu.items);
   menu_opts_off(top_menu.m, O_SHOWDESC);
 
@@ -103,6 +97,31 @@ hide_all_panels_except(struct window_params *p) {
       t->hidden = true;
     }
   }
+}
+
+int
+top_menu_store(FILE *f) {
+  ITEM *cur = current_item(top_menu.m);
+  int idx = item_index(cur);
+  return fprintf(f, "%i\n", idx);
+}
+
+int
+top_menu_load(FILE *f) {
+  ITEM *cur;
+  int idx = 0;
+  int ret = fscanf(f, "%i\n", &idx);
+  if (ret != 1) {
+    return -1;
+  }
+  if (idx>=N_ITEMS) {
+    idx = 0;
+    return -2;
+  }
+  cur = top_menu.items[idx];
+  set_current_item(top_menu.m, cur);
+  hide_all_panels_except(item_userptr(cur));
+  return 0;
 }
 
 int

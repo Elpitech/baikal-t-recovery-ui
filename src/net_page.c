@@ -128,7 +128,7 @@ init_net_page(void) {
   //width = 6*3-1 -> 6 mac fields by 2 symbols = 6*2 + 6-1 single char spaces
   //this width makes it less ugly
   mvwaddstr(net_page.wp.w, cy, 2, "DHCP client");
-  net_page.fields[DHCP_LABEL] = mk_label(6*3-1, 0, cy-2, DHCP_LABEL_TXT, BG_COLOR);
+  net_page.fields[DHCP_LABEL] = mk_button(6*3-1, 0, cy-2, DHCP_LABEL_TXT, BG_COLOR);
 
   cy+=2;
 #if defined(BOARD_MITX4)
