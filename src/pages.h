@@ -41,6 +41,7 @@ struct pages {
   enum START start;
   int bmc_version[3];
   uint8_t boot_reason[2];
+  bool use_arrows;
 };
 
 extern struct pages pages_params;

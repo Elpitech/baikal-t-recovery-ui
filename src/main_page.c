@@ -1,4 +1,5 @@
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <stdlib.h>
 #include <panel.h>
@@ -9,8 +10,9 @@
 #include <wchar.h>
 #include <menu.h>
 #include <form.h>
-
+#include <linux/rtc.h>
 #include <time.h>
+#include <fcntl.h>
 
 #include "common.h"
 #include "pages.h"
@@ -28,6 +30,20 @@
 #define SYS_TEMP_PATH "/sys/bus/platform/drivers/pvt-hwmon/1f200000.pvt/temp1_input"
 #define SYS_COREV_PATH "/sys/bus/platform/drivers/pvt-hwmon/1f200000.pvt/in1_input"
 
+#define OFF_YEAR 0
+#define W_YEAR 4
+#define OFF_MONTH (OFF_YEAR+W_YEAR+1)
+#define W_MONTH 2
+#define OFF_DAY (OFF_MONTH+W_MONTH+1)
+#define W_DAY 2
+
+#define OFF_HR 0
+#define W_HR 2
+#define OFF_MN (OFF_HR+W_HR+1)
+#define W_MN 2
+#define OFF_SC (OFF_MN+W_MN+1)
+#define W_SC 2
+
 enum BMC_BOOTREASON {
   BR_UNKNOWN=0,
   BR_NORMAL,
@@ -40,8 +56,14 @@ enum fields_col1 {
   BOOTREASON_VAL=0,
   TESTOK_VAL,
   TIMESTAT_VAL,
-  TIME_VAL,
-  DATE_VAL,
+  /* TIME_VAL, */
+  /* DATE_VAL, */
+  TIME_HR_EDIT,
+  TIME_MN_EDIT,
+  TIME_SC_EDIT,
+  DATE_YEAR_EDIT,
+  DATE_MONTH_EDIT,
+  DATE_DAY_EDIT,
   TEMP_VAL,
   VOLTAGE_VAL,
   SHRED_VAL,
@@ -78,19 +100,25 @@ static struct {
   WINDOW *sw;
   uint32_t shred;
   char shred_label[20];
-  char time_label[20];
+  /* char time_label[20]; */
   char temp_label[20];
   char voltage_label[20];
   char mfg_date_label[20];
-  char date_label[20];
+  /* char date_label[20]; */
   char bmc_version_label[20];
   char rfs_version[20];
   char kernel_release[20];
+  char year_val[5];
+  char month_val[3];
+  char day_val[3];
+  char hour_val[3];
+  char min_val[3];
+  char sec_val[3];
   FIELD *fields_col1[N_FIELDS+1];
 	FORM  *f1;
   FIELD *fields_col2[COL2_N_FIELDS+1];
 	FORM  *f2;
-
+  bool edit_mode;
 } main_page;
 
 FIELD *mk_spinner(int w, int x, int y, char **strings, int n_str, int default_n, chtype c) {
@@ -298,6 +326,7 @@ init_main_page(void) {
   time_t t;
   struct tm tm;
   int y = 0;
+  main_page.edit_mode = false;
   read_bmc_version();
   main_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
   box(main_page.wp.w, 0, 0);
@@ -352,16 +381,30 @@ init_main_page(void) {
   y+=2;
   
   mvwaddstr(main_page.wp.w, y+2, 2, "Time");
-  sprintf(main_page.time_label, "%02i:%02i:%02i UTC", tm.tm_hour, tm.tm_min, tm.tm_sec);
-  log("time field len: %i\n", strlen(main_page.time_label));
-	main_page.fields_col1[TIME_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.time_label, PAGE_COLOR);
+  /* sprintf(main_page.time_label, "%02i:%02i:%02i UTC", tm.tm_hour, tm.tm_min, tm.tm_sec); */
+  /* log("time field len: %i\n", strlen(main_page.time_label)); */
+	/* main_page.fields_col1[TIME_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.time_label, PAGE_COLOR); */
+  sprintf(main_page.hour_val, "%02i", tm.tm_hour);
+  sprintf(main_page.min_val, "%02i", tm.tm_min);
+  sprintf(main_page.sec_val, "%02i", tm.tm_sec);
+  main_page.fields_col1[TIME_HR_EDIT] = mk_editable_field_regex(W_HR, OFF_HR, y, main_page.hour_val, "[0-2][0-9]", BG_COLOR);
+  main_page.fields_col1[TIME_MN_EDIT] = mk_editable_field_regex(W_MN, OFF_MN, y, main_page.min_val, "[0-6][0-9]", BG_COLOR);
+  main_page.fields_col1[TIME_SC_EDIT] = mk_editable_field_regex(W_SC, OFF_SC, y, main_page.sec_val, "[0-6][0-9]", BG_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Date");
-  sprintf(main_page.date_label, "%04i-%02i-%02i", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
-  log("date field len: %i\n", strlen(main_page.date_label));
-	main_page.fields_col1[DATE_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.date_label, PAGE_COLOR);
+  sprintf(main_page.year_val, "%04i", tm.tm_year + 1900);
+  sprintf(main_page.month_val, "%02i", tm.tm_mon + 1);
+  sprintf(main_page.day_val, "%02i", tm.tm_mday);
+  main_page.fields_col1[DATE_YEAR_EDIT] = mk_editable_field_regex(W_YEAR, OFF_YEAR, y, main_page.year_val, "[12][0-9][0-9][0-9]", BG_COLOR);
+  main_page.fields_col1[DATE_MONTH_EDIT] = mk_editable_field_regex(W_MONTH, OFF_MONTH, y, main_page.month_val, "[01][0-9]", BG_COLOR);
+  main_page.fields_col1[DATE_DAY_EDIT] = mk_editable_field_regex(W_DAY, OFF_DAY, y, main_page.day_val, "[0123][0-9]", BG_COLOR);
   y+=2;
+
+  /* sprintf(main_page.date_label, "%04i-%02i-%02i", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday); */
+  /* log("date field len: %i\n", strlen(main_page.date_label)); */
+	/* main_page.fields_col1[DATE_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.date_label, PAGE_COLOR); */
+  /* y+=2; */
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Core temperature");
   log("temp field len: %i\n", strlen(main_page.temp_label));
@@ -495,25 +538,211 @@ init_main_page(void) {
   redrawwin(main_page.wp.w);
 }
 
-int
-main_page_process(int ch) {
-  if (!main_page.wp.hidden) {
+void
+main_update_datetime(void) {
+  if (!main_page.edit_mode) {
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    curs_set(0);
+    sprintf(main_page.year_val, "%04i", tm.tm_year + 1900);
+    sprintf(main_page.month_val, "%02i", tm.tm_mon + 1);
+    sprintf(main_page.day_val, "%02i", tm.tm_mday);
+    set_field_buffer(main_page.fields_col1[DATE_YEAR_EDIT], 0, main_page.year_val);
+    set_field_buffer(main_page.fields_col1[DATE_MONTH_EDIT], 0, main_page.month_val);
+    set_field_buffer(main_page.fields_col1[DATE_DAY_EDIT], 0, main_page.day_val);
+    
+    sprintf(main_page.hour_val, "%02i", tm.tm_hour);
+    sprintf(main_page.min_val, "%02i", tm.tm_min);
+    sprintf(main_page.sec_val, "%02i", tm.tm_sec);
+    set_field_buffer(main_page.fields_col1[TIME_HR_EDIT], 0, main_page.hour_val);
+    set_field_buffer(main_page.fields_col1[TIME_MN_EDIT], 0, main_page.min_val);
+    set_field_buffer(main_page.fields_col1[TIME_SC_EDIT], 0, main_page.sec_val);
+  }
+}
 
-    sprintf(main_page.time_label, "%02i:%02i:%02i UTC", tm.tm_hour, tm.tm_min, tm.tm_sec);
-    set_field_buffer(main_page.fields_col1[TIME_VAL], 0, main_page.time_label);
-    sprintf(main_page.date_label, "%04i-%02i-%02i", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
-    set_field_buffer(main_page.fields_col1[DATE_VAL], 0, main_page.date_label);
-
-    read_pvt();
-    set_field_buffer(main_page.fields_col1[TEMP_VAL], 0, main_page.temp_label);
-    set_field_buffer(main_page.fields_col1[VOLTAGE_VAL], 0, main_page.voltage_label);
-
-    wnoutrefresh(main_page.wp.w);
+int
+main_validate_datetime(struct tm *tm) {
+  int y, m, d;
+  int hr, mn, sc;
+  
+  sscanf(field_buffer(main_page.fields_col1[DATE_YEAR_EDIT], 0), "%i", &y);
+  sscanf(field_buffer(main_page.fields_col1[DATE_MONTH_EDIT], 0), "%i", &m);
+  sscanf(field_buffer(main_page.fields_col1[DATE_DAY_EDIT], 0), "%i", &d);
+  sscanf(field_buffer(main_page.fields_col1[TIME_HR_EDIT], 0), "%i", &hr);
+  sscanf(field_buffer(main_page.fields_col1[TIME_MN_EDIT], 0), "%i", &mn);
+  sscanf(field_buffer(main_page.fields_col1[TIME_SC_EDIT], 0), "%i", &sc);
+  if (sc>=0 && sc<=60) {
+    if (tm != NULL) {
+      tm->tm_sec = sc;
+    }
+    set_field_fore(main_page.fields_col1[TIME_SC_EDIT], BG_COLOR);
+    set_field_back(main_page.fields_col1[TIME_SC_EDIT], BG_COLOR);
+  } else {
+    set_field_fore(main_page.fields_col1[TIME_SC_EDIT], RED_EDIT_COLOR);
+    set_field_back(main_page.fields_col1[TIME_SC_EDIT], RED_EDIT_COLOR);
+    return -1;
+  }
+  if (mn>=0 && mn<=59) {
+    if (tm != NULL) {
+      tm->tm_min = mn;
+    }
+    set_field_fore(main_page.fields_col1[TIME_MN_EDIT], BG_COLOR);
+    set_field_back(main_page.fields_col1[TIME_MN_EDIT], BG_COLOR);
+  } else {
+    set_field_fore(main_page.fields_col1[TIME_MN_EDIT], RED_EDIT_COLOR);
+    set_field_back(main_page.fields_col1[TIME_MN_EDIT], RED_EDIT_COLOR);
+    return -2;
+  }
+  if (hr>=0 && hr<=23) {
+    if (tm != NULL) {
+      tm->tm_hour = hr;
+    }
+    set_field_fore(main_page.fields_col1[TIME_HR_EDIT], BG_COLOR);
+    set_field_back(main_page.fields_col1[TIME_HR_EDIT], BG_COLOR);
+  } else {
+    set_field_fore(main_page.fields_col1[TIME_HR_EDIT], RED_EDIT_COLOR);
+    set_field_back(main_page.fields_col1[TIME_HR_EDIT], RED_EDIT_COLOR);
+    return -3;
+  }
+  if (d>=1 && d<=31) {
+    if (tm != NULL) {
+      tm->tm_mday = d;
+    }
+    set_field_fore(main_page.fields_col1[DATE_DAY_EDIT], BG_COLOR);
+    set_field_back(main_page.fields_col1[DATE_DAY_EDIT], BG_COLOR);
+  } else {
+    set_field_fore(main_page.fields_col1[DATE_DAY_EDIT], RED_EDIT_COLOR);
+    set_field_back(main_page.fields_col1[DATE_DAY_EDIT], RED_EDIT_COLOR);
+    return -4;
+  }
+  if (m>=1 && m<=12) {
+    if (tm != NULL) {
+      tm->tm_mon = m-1;
+    }
+    set_field_fore(main_page.fields_col1[DATE_MONTH_EDIT], BG_COLOR);
+    set_field_back(main_page.fields_col1[DATE_MONTH_EDIT], BG_COLOR);
+  } else {
+    set_field_fore(main_page.fields_col1[DATE_MONTH_EDIT], RED_EDIT_COLOR);
+    set_field_back(main_page.fields_col1[DATE_MONTH_EDIT], RED_EDIT_COLOR);
+    return -5;
+  }
+  if (y>=1970) {
+    if (tm != NULL) {
+      tm->tm_year = y-1900;
+    }
+    set_field_fore(main_page.fields_col1[DATE_YEAR_EDIT], BG_COLOR);
+    set_field_back(main_page.fields_col1[DATE_YEAR_EDIT], BG_COLOR);
+  } else {
+    set_field_fore(main_page.fields_col1[DATE_YEAR_EDIT], RED_EDIT_COLOR);
+    set_field_back(main_page.fields_col1[DATE_YEAR_EDIT], RED_EDIT_COLOR);
+    return -6;
   }
   return 0;
+}
+
+int
+main_save_datetime(void) {
+  time_t t;
+  struct tm tm;
+  struct rtc_time rtc;
+  int fd;
+  main_validate_datetime(&tm);
+
+  t = mktime(&tm);
+  stime(&t);
+  
+  rtc.tm_sec = tm.tm_sec;
+  rtc.tm_min = tm.tm_min;
+  rtc.tm_hour = tm.tm_hour;
+  rtc.tm_mday = tm.tm_mday;
+  rtc.tm_mon = tm.tm_mon;
+  rtc.tm_year = tm.tm_year;
+  fd = open("/dev/rtc0", O_RDONLY);
+  ioctl(fd, RTC_SET_TIME, &rtc);
+  close(fd);
+  return 0;
+}
+
+static void
+update_background(void) {
+  if (main_page.edit_mode) {
+    FIELD *f = current_field(main_page.f1);
+    int i = TIME_HR_EDIT;
+    for (;i<=DATE_DAY_EDIT; i++) {
+      if (f != main_page.fields_col1[i]) {
+        set_field_back(main_page.fields_col1[i], BG_COLOR);
+        set_field_fore(main_page.fields_col1[i], BG_COLOR);
+      } else {
+        log("Found field being edited\n");
+        set_field_back(main_page.fields_col1[i], EDIT_COLOR);
+        set_field_fore(main_page.fields_col1[i], EDIT_COLOR);
+      }
+    }
+    wnoutrefresh(main_page.wp.w);
+  }
+}
+
+int
+main_page_process(int ch) {
+  int ret;
+  static uint64_t last_t = 0;
+  uint64_t cur_t = time(NULL);
+  if (!main_page.wp.hidden) {
+    if ((cur_t-last_t)>1) {
+      last_t = cur_t;
+      read_pvt();
+      set_field_buffer(main_page.fields_col1[TEMP_VAL], 0, main_page.temp_label);
+      set_field_buffer(main_page.fields_col1[VOLTAGE_VAL], 0, main_page.voltage_label);
+    }
+    main_update_datetime();
+    curs_set(1);
+    switch (ch) {
+    case KEY_DOWN:
+      form_driver(main_page.f1, REQ_NEXT_FIELD);
+      ret = main_validate_datetime(NULL);
+      update_background();
+      break;
+    case KEY_UP:
+      form_driver(main_page.f1, REQ_PREV_FIELD);
+      ret = main_validate_datetime(NULL);
+      update_background();
+      break;
+		case KEY_BACKSPACE:
+		case 127:
+      form_driver(main_page.f1, REQ_DEL_PREV);
+      break;
+    case KEY_DC:
+      form_driver(main_page.f1, REQ_DEL_CHAR);
+			break;
+    case RKEY_ENTER:
+      main_page.edit_mode = true;
+      pages_params.use_arrows = false;
+      update_background();
+      break;
+    case RKEY_ESC:
+      pages_params.use_arrows = true;
+      main_page.edit_mode = false;
+      ret = main_validate_datetime(NULL);
+      if (ret==0) {
+        ret = main_save_datetime();
+      }
+      break;
+    case KEY_LEFT:
+      form_driver(main_page.f1, REQ_PREV_CHAR);
+      break;
+    case KEY_RIGHT:
+      form_driver(main_page.f1, REQ_NEXT_CHAR);
+      break;
+    default:
+      if (main_page.edit_mode) {
+        form_driver(main_page.f1, ch);
+      }
+      break;
+    }
+    wnoutrefresh(main_page.wp.w);
+    update_background();
+  }
+  return 0;
+
 }
 
 void

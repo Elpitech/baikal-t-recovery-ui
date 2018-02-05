@@ -6,7 +6,7 @@
 #define TOP_MENU_H 2
 #define TOP_MENU_W COLS
 
-void init_top_menu(struct window_params *main, struct window_params *dt, struct window_params *boot, struct window_params *net, struct window_params *rec);
+void init_top_menu(struct window_params *main, struct window_params *boot, struct window_params *net, struct window_params *rec);
 void hide_all_panels_except(struct window_params *p);
 int top_menu_store(FILE *f);
 int top_menu_load(FILE *f);

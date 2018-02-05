@@ -11,7 +11,7 @@
 #include "top_menu.h"
 
 #define TAG "TOP_MENU"
-#define N_ITEMS 5
+#define N_ITEMS 4
 
 #define LABEL_WIDTH 32
 #define xstr(a) str(a)
@@ -33,7 +33,7 @@ static struct {
 } top_menu;
 
 void
-init_top_menu(struct window_params *main, struct window_params *dt, struct window_params *boot, struct window_params *net, struct window_params *rec) {
+init_top_menu(struct window_params *main, struct window_params *boot, struct window_params *net, struct window_params *rec) {
   const char header[] = "T-Platforms mITX recovery";
   top_menu.w = newwin(TOP_MENU_H, TOP_MENU_W, 0, 0);
   wbkgd(top_menu.w, BG_COLOR);
@@ -41,19 +41,16 @@ init_top_menu(struct window_params *main, struct window_params *dt, struct windo
   top_menu.items[0] = new_item("Main", "MAIN");
   set_item_userptr(top_menu.items[0], main);
 
-  top_menu.items[1] = new_item("Date/time", "DT");
-  set_item_userptr(top_menu.items[1], dt);
-
-  top_menu.items[2] = new_item("Boot", "BOOT");
-  set_item_userptr(top_menu.items[2], boot);
+  top_menu.items[1] = new_item("Boot", "BOOT");
+  set_item_userptr(top_menu.items[1], boot);
   
-  top_menu.items[3] = new_item("Network", "NET");
-  set_item_userptr(top_menu.items[3], net);
+  top_menu.items[2] = new_item("Network", "NET");
+  set_item_userptr(top_menu.items[2], net);
 
-  top_menu.items[4] = new_item("Maintenance", "MAINT");
-  set_item_userptr(top_menu.items[4], rec);
+  top_menu.items[3] = new_item("Maintenance", "MAINT");
+  set_item_userptr(top_menu.items[3], rec);
 
-  top_menu.items[5] = NULL;
+  top_menu.items[4] = NULL;
   top_menu.m = new_menu((ITEM **)top_menu.items);
   menu_opts_off(top_menu.m, O_SHOWDESC);
 
@@ -72,12 +69,13 @@ init_top_menu(struct window_params *main, struct window_params *dt, struct windo
   top_menu.bottom_w = newwin(1, TOP_MENU_W, LINES-1, 0);
   wbkgd(top_menu.bottom_w, BG_COLOR);
   
-  const char nav_text[] = "  Enter: select | Left/Right: select page | Up/Down: select option | F6: exit | F10: save and exit";
+  const char nav_text[] = "      Enter/ESC: selection | Left/Right/Up/Down: navigation | F6: exit | F10: save and exit";
   mvwaddstr(top_menu.bottom_w, 0, 0, nav_text);
 
   post_menu(top_menu.m);
   redrawwin(top_menu.w);
   redrawwin(top_menu.bottom_w);
+  pages_params.use_arrows = true;
   //win_show(, label, 1);
 }
 
@@ -127,24 +125,26 @@ top_menu_load(FILE *f) {
 int
 top_menu_process(int ch) {
   ITEM *cur;
-  switch (ch) {
-  case KEY_LEFT:
-    menu_driver(top_menu.m, REQ_LEFT_ITEM);
-    cur = current_item(top_menu.m);
-    hide_all_panels_except(item_userptr(cur));
-    touchwin(top_menu.w);
+  if (pages_params.use_arrows) {
+    switch (ch) {
+    case KEY_LEFT:
+      menu_driver(top_menu.m, REQ_LEFT_ITEM);
+      cur = current_item(top_menu.m);
+      hide_all_panels_except(item_userptr(cur));
+      touchwin(top_menu.w);
+      wnoutrefresh(top_menu.w);
+      break;
+    case KEY_RIGHT:
+      menu_driver(top_menu.m, REQ_RIGHT_ITEM);
+      cur = current_item(top_menu.m);
+      hide_all_panels_except(item_userptr(cur));
+      touchwin(top_menu.w);
+      wnoutrefresh(top_menu.w);
+      break;
+    }
     wnoutrefresh(top_menu.w);
-    break;
-  case KEY_RIGHT:
-    menu_driver(top_menu.m, REQ_RIGHT_ITEM);
-    cur = current_item(top_menu.m);
-    hide_all_panels_except(item_userptr(cur));
-    touchwin(top_menu.w);
-    wnoutrefresh(top_menu.w);
-    break;
+    wnoutrefresh(top_menu.bottom_w);
   }
-  wnoutrefresh(top_menu.w);
-  wnoutrefresh(top_menu.bottom_w);
   return 0;
 }
 

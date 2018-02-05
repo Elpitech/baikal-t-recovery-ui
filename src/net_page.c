@@ -68,6 +68,7 @@ static struct {
   char ip_val[NI_MAXHOST];
   FIELD *fields[N_FIELDS+1];
 	FORM  *f;
+  bool edit_mode;
 } net_page;
 
 int
@@ -116,6 +117,7 @@ init_net_page(void) {
   int i = 0;
   int ret;
   int cy = 2;
+  net_page.edit_mode = false;
   net_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
   box(net_page.wp.w, 0, 0);
   wbkgd(net_page.wp.w, PAGE_COLOR);
@@ -210,17 +212,53 @@ net_save_mac(int iface) {
   fru_mrec_update_mac(&fru, mac, iface);
 }
 
+static void
+update_background(FIELD *f) {
+  int i = MAC0_VAL;
+  int last = MAC5_VAL;
+#if ! defined(BOARD_MITX4)
+  last = MAC25_VAL;
+#endif
+  for (;i<=last;i++) {
+    if (net_page.edit_mode && f == net_page.fields[i]) {
+      set_field_back(net_page.fields[i], EDIT_COLOR);
+      set_field_fore(net_page.fields[i], EDIT_COLOR);
+    } else {
+      set_field_back(net_page.fields[i], BG_COLOR);
+      set_field_fore(net_page.fields[i], BG_COLOR);
+    }
+  }
+  //wnoutrefresh(net_page.wp.w);
+}
+
 int
 net_page_process(int ch) {
-  FIELD *f;
+  FIELD *f = current_field(net_page.f);
+  FIELD *editable_first = net_page.fields[MAC0_VAL];
+  FIELD *editable_last = net_page.fields[MAC5_VAL];
+#if ! defined(BOARD_MITX4)
+  editable_last = net_page.fields[MAC25_VAL];
+#endif
   if (!net_page.wp.hidden) {
     curs_set(1);
     switch (ch) {
     case KEY_DOWN:
-      form_driver(net_page.f, REQ_NEXT_FIELD);
+      if (net_page.edit_mode) {
+        if (f != editable_last) {
+          form_driver(net_page.f, REQ_NEXT_FIELD);
+        }
+      } else {
+        form_driver(net_page.f, REQ_NEXT_FIELD);
+      }
       break;
     case KEY_UP:
-      form_driver(net_page.f, REQ_PREV_FIELD);
+      if (net_page.edit_mode) {
+        if (f != editable_first) {
+          form_driver(net_page.f, REQ_PREV_FIELD);
+        }
+      } else {
+        form_driver(net_page.f, REQ_PREV_FIELD);
+      }
       break;
 		case KEY_BACKSPACE:
 		case 127:
@@ -229,25 +267,45 @@ net_page_process(int ch) {
     case KEY_DC:
       form_driver(net_page.f, REQ_DEL_CHAR);
 			break;
-    case RKEY_ENTER://KEY_ENTER:
-      f = current_field(net_page.f);
+    case RKEY_ENTER:
       if (f == net_page.fields[DHCP_LABEL]) {
         pages_params.start = START_DHCP;
         log("Set start dhcp flag\n");
       } else {
+        net_page.edit_mode = true;
+        pages_params.use_arrows = false;
+      }
+      break;
+    case RKEY_ESC:
+      if (net_page.edit_mode) {
         net_save_mac(0);
 #if ! defined(BOARD_MITX4)
         net_save_mac(1);
         net_save_mac(2);
 #endif
+        update_background(NULL);
+        //wrefresh(net_page.wp.w);
+        //wnoutrefresh(net_page.wp.w);
+        //redrawwin(net_page.wp.w);
+        pages_params.use_arrows = true;
+        net_page.edit_mode = false;
+        form_driver(net_page.f, ch);
       }
       break;
-    case RKEY_ESC:
+    case KEY_LEFT:
+      form_driver(net_page.f, REQ_PREV_CHAR);
+      break;
+    case KEY_RIGHT:
+      form_driver(net_page.f, REQ_NEXT_CHAR);
       break;
     default:
-      form_driver(net_page.f, ch);
+      if (net_page.edit_mode) {
+        form_driver(net_page.f, ch);
+      }
       break;
     }
+    f = current_field(net_page.f);
+    update_background(f);
     wnoutrefresh(net_page.wp.w);
   }
   return 0;

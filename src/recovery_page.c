@@ -52,6 +52,7 @@ static struct {
   FIELD *fields[N_FIELDS+1];
 	FORM  *f;
   char url[ROM_URL_SIZE];
+  bool edit_mode;
 } recovery_page;
 
 void
@@ -224,6 +225,7 @@ check_int_recovery(void) {
 void
 init_recovery_page(void) {
   int width, height;
+  recovery_page.edit_mode = false;
   memset(recovery_page.url, 0, ROM_URL_SIZE);
   recovery_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
   box(recovery_page.wp.w, 0, 0);
@@ -286,6 +288,18 @@ recovery_page_load(FILE *f) {
   return 0;
 }
 
+static void
+update_background(void) {
+  if (recovery_page.edit_mode) {
+    FIELD *f = current_field(recovery_page.f);
+    if (f == recovery_page.fields[ROM_URL_LABEL]) {
+      set_field_back(recovery_page.fields[ROM_URL_LABEL], EDIT_COLOR);
+      set_field_fore(recovery_page.fields[ROM_URL_LABEL], EDIT_COLOR);
+    }
+    //wnoutrefresh(recovery_page.wp.w);
+  }
+}
+
 int
 recovery_page_process(int ch) {
   static uint64_t last_t = 0;
@@ -304,7 +318,10 @@ recovery_page_process(int ch) {
     {
       log("Recovery: enter pressed\n");
       FIELD *f = current_field(recovery_page.f);
-      if (f == recovery_page.fields[EXT_RECOVERY_LABEL]) {
+      if (f == recovery_page.fields[ROM_URL_LABEL]) {
+        pages_params.use_arrows = false;
+        recovery_page.edit_mode = true;
+      } else if (f == recovery_page.fields[EXT_RECOVERY_LABEL]) {
         if (pages_params.ext_recovery_valid) {
           pages_params.start = START_EXT;
           log("Set start external recovery flag\n");
@@ -347,12 +364,27 @@ recovery_page_process(int ch) {
     case KEY_DC:
       form_driver(recovery_page.f, REQ_DEL_CHAR);
 			break;
-    default:
+    case RKEY_ESC:
+      pages_params.use_arrows = true;
+      recovery_page.edit_mode = false;
+      set_field_back(recovery_page.fields[ROM_URL_LABEL], BG_COLOR);
+      set_field_fore(recovery_page.fields[ROM_URL_LABEL], BG_COLOR);
       form_driver(recovery_page.f, ch);
       break;
+    case KEY_LEFT:
+      form_driver(recovery_page.f, REQ_PREV_CHAR);
+      break;
+    case KEY_RIGHT:
+      form_driver(recovery_page.f, REQ_NEXT_CHAR);
+      break;
+    default:
+      if (recovery_page.edit_mode) {
+        form_driver(recovery_page.f, ch);
+      }
+      break;
     }
-
     wnoutrefresh(recovery_page.wp.w);
+    update_background();
   }
   return 0;
 }

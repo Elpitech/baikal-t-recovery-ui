@@ -8,6 +8,7 @@
 #define GREEN_COLOR COLOR_PAIR(5)
 #define RED_COLOR COLOR_PAIR(6)
 #define RED_EDIT_COLOR COLOR_PAIR(7)
+#define EDIT_COLOR COLOR_PAIR(8)
 
 #define RKEY_ENTER 0x0a
 #define RKEY_ESC   0x1b
