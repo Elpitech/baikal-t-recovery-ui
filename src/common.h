@@ -16,11 +16,15 @@
 #define RKEY_F6    0x10e
 
 extern FILE *logfile;
-#define log(...) {fprintf (logfile, "L["TAG"]: "__VA_ARGS__); fflush(logfile); }
-#define warn(...) {fprintf (logfile, "W["TAG"]: "__VA_ARGS__); fflush(logfile); }
-#define err(...) {fprintf (logfile, "E["TAG"]: "__VA_ARGS__); fflush(logfile); }
-#define msg(...) {fprintf (logfile, __VA_ARGS__); fflush(logfile); }
-
+#define flog(...) {fprintf (logfile, "L["TAG"]: "__VA_ARGS__); fflush(logfile); }
+#define fwarn(...) {fprintf (logfile, "W["TAG"]: "__VA_ARGS__); fflush(logfile); }
+#define ferr(...) {fprintf (logfile, "E["TAG"]: "__VA_ARGS__); fflush(logfile); }
+#define fmsg(...) {fprintf (logfile, __VA_ARGS__); fflush(logfile); }
+#ifdef DEBUG
+#define fdbg fmsg
+#else
+#define fdbg(...)
+#endif
 
 struct spinner_arg {
   int current_str;

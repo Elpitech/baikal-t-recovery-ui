@@ -229,26 +229,26 @@ uint32_t read_shred(void) {
   int i = 0;
   char buf[64] = {0};
   for (i=0;i<SHRED_NGPIO;i++) {
-    log("Opening /sys/class/gpio/export\n");
+    flog("Opening /sys/class/gpio/export\n");
     FILE *export = fopen("/sys/class/gpio/export", "w");
     if (export == NULL) {
-      err("Failed to open /sys/class/gpio/export\n");
+      ferr("Failed to open /sys/class/gpio/export\n");
       return val;
     }
     ret = sprintf(buf, "%i", i+SHRED_GPIO_BASE);
-    log("Exporting pin %s[len: %i]\n", buf, ret);
+    flog("Exporting pin %s[len: %i]\n", buf, ret);
     fwrite(buf, sizeof(char), ret, export);
     fclose(export);
     sprintf(buf, "/sys/class/gpio/gpio%i/value", i+SHRED_GPIO_BASE);
-    log("Opening %s\n", buf);
+    flog("Opening %s\n", buf);
     FILE *gpio = fopen(buf, "r");
     if (gpio == NULL) {
-      err("Failed to open %s\n", buf);
+      ferr("Failed to open %s\n", buf);
       fclose(export);
       return shred_val;
     }
     ret = fscanf(gpio, "%i", &val);
-    log("gpio[%i] read returned %i, value: %i\n", i+SHRED_GPIO_BASE, ret, val);
+    flog("gpio[%i] read returned %i, value: %i\n", i+SHRED_GPIO_BASE, ret, val);
     shred_val |= (val!=0?(1<<i):0);
     fclose(gpio);
   }
@@ -269,28 +269,28 @@ void read_bmc_version(void) {
   pages_params.boot_reason[1] = 0;
   FILE *version = fopen("/sys/bus/i2c/drivers/mitx2-bmc/version", "r");
   if (version == NULL) {
-    err("Failed to open /sys/bus/i2c/drivers/mitx2-bmc/version\n");
+    ferr("Failed to open /sys/bus/i2c/drivers/mitx2-bmc/version\n");
     return;
   }
   ret = fscanf(version, "%i.%i.%i", &pages_params.bmc_version[0], &pages_params.bmc_version[1], &pages_params.bmc_version[2]);
   fclose(version);
-  log("BMC version read returned %i, value: %i.%i.%i\n", ret, pages_params.bmc_version[0], pages_params.bmc_version[1], pages_params.bmc_version[2]);
+  flog("BMC version read returned %i, value: %i.%i.%i\n", ret, pages_params.bmc_version[0], pages_params.bmc_version[1], pages_params.bmc_version[2]);
   if (pages_params.bmc_version[0] >= 2) {
     ret = stat("/sys/bus/i2c/drivers/mitx2-bmc/bootreason", &st);
     if (ret<0) {
-      log("Failed to stat bmc sysfs bootreason, assuming ancient BMC\n");
+      flog("Failed to stat bmc sysfs bootreason, assuming ancient BMC\n");
       return;
     }
     FILE *bootreason = fopen("/sys/bus/i2c/drivers/mitx2-bmc/bootreason", "r");
     if (bootreason == NULL) {
-      err("Failed to open /sys/bus/i2c/drivers/mitx2-bmc/bootreason\n");
+      ferr("Failed to open /sys/bus/i2c/drivers/mitx2-bmc/bootreason\n");
       return;
     }
     ret = fscanf(bootreason, "%i", &reason);
     fclose(bootreason);
     pages_params.boot_reason[0] = reason & 0xff;
     pages_params.boot_reason[1] = (reason>>8) & 0xff;
-    log("Bootreason: %i/%i\n", pages_params.boot_reason[0], pages_params.boot_reason[1]);
+    flog("Bootreason: %i/%i\n", pages_params.boot_reason[0], pages_params.boot_reason[1]);
   }
 }
 
@@ -298,7 +298,7 @@ int
 read_pvt(void) {
   FILE * pvt_temp_file = fopen(SYS_TEMP_PATH, "r");
   if (pvt_temp_file == NULL) {
-    err("Failed to open %s\n", SYS_TEMP_PATH);
+    ferr("Failed to open %s\n", SYS_TEMP_PATH);
     sprintf(main_page.temp_label, "%.3f", 0.0f);
     return -1;
   }
@@ -309,7 +309,7 @@ read_pvt(void) {
 
   FILE * pvt_core_voltage_file = fopen(SYS_COREV_PATH, "r");
   if (pvt_core_voltage_file == NULL) {
-    err("Failed to open %s\n", SYS_COREV_PATH);
+    ferr("Failed to open %s\n", SYS_COREV_PATH);
     sprintf(main_page.voltage_label, "%.3f", 0.0f);
     return -2;
   }
@@ -338,7 +338,7 @@ init_main_page(void) {
   (void)height;
 
   main_page.shred = read_shred();
-  log("shred: 0x%08x\n", main_page.shred);
+  flog("shred: 0x%08x\n", main_page.shred);
   t = time(NULL);
   tm = *localtime(&t);
   read_pvt();
@@ -358,17 +358,17 @@ init_main_page(void) {
   }
   y+=2;
 
-  log("Test ok: %i\n", fru.test_ok);
+  flog("Test ok: %i\n", fru.test_ok);
   mvwaddstr(main_page.wp.w, y+2, 2, "MFG HW test status");
   if (fru.test_ok==1) {
     main_page.fields_col1[TESTOK_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "PASSED", GREEN_COLOR);
-    log("mfg hw test status field len: %i\n", strlen("PASSED"));
+    flog("mfg hw test status field len: %i\n", strlen("PASSED"));
   } else if (fru.test_ok==2) {
     main_page.fields_col1[TESTOK_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "FAILED", RED_COLOR);
-    log("mfg hw test status field len: %i\n", strlen("FAILED"));
+    flog("mfg hw test status field len: %i\n", strlen("FAILED"));
   } else {
     main_page.fields_col1[TESTOK_VAL] = mk_label(LABEL_WIDTH-3, 0, y, "UNKNOWN", PAGE_COLOR);
-    log("mfg hw test status field len: %i\n", strlen("UNKNOWN"));
+    flog("mfg hw test status field len: %i\n", strlen("UNKNOWN"));
   }
   y+=2;
 
@@ -382,7 +382,7 @@ init_main_page(void) {
   
   mvwaddstr(main_page.wp.w, y+2, 2, "Time");
   /* sprintf(main_page.time_label, "%02i:%02i:%02i UTC", tm.tm_hour, tm.tm_min, tm.tm_sec); */
-  /* log("time field len: %i\n", strlen(main_page.time_label)); */
+  /* flog("time field len: %i\n", strlen(main_page.time_label)); */
 	/* main_page.fields_col1[TIME_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.time_label, PAGE_COLOR); */
   sprintf(main_page.hour_val, "%02i", tm.tm_hour);
   sprintf(main_page.min_val, "%02i", tm.tm_min);
@@ -402,29 +402,29 @@ init_main_page(void) {
   y+=2;
 
   /* sprintf(main_page.date_label, "%04i-%02i-%02i", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday); */
-  /* log("date field len: %i\n", strlen(main_page.date_label)); */
+  /* flog("date field len: %i\n", strlen(main_page.date_label)); */
 	/* main_page.fields_col1[DATE_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.date_label, PAGE_COLOR); */
   /* y+=2; */
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Core temperature");
-  log("temp field len: %i\n", strlen(main_page.temp_label));
+  flog("temp field len: %i\n", strlen(main_page.temp_label));
 	main_page.fields_col1[TEMP_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.temp_label, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Core voltage");
-  log("voltage field len: %i\n", strlen(main_page.voltage_label));
+  flog("voltage field len: %i\n", strlen(main_page.voltage_label));
 	main_page.fields_col1[VOLTAGE_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.voltage_label, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "SHRED");
   sprintf(main_page.shred_label, "%02x", main_page.shred);
-  log("shred field len: %i\n", strlen(main_page.shred_label));
+  flog("shred field len: %i\n", strlen(main_page.shred_label));
 	main_page.fields_col1[SHRED_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.shred_label, PAGE_COLOR);
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "BMC protocol version");
   sprintf(main_page.bmc_version_label, "%i.%i.%i", pages_params.bmc_version[0], pages_params.bmc_version[1], pages_params.bmc_version[2]);
-  log("bmc version field len: %i\n", strlen(main_page.bmc_version_label));
+  flog("bmc version field len: %i\n", strlen(main_page.bmc_version_label));
 	main_page.fields_col1[BMC_PROTO_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.bmc_version_label, PAGE_COLOR);
   y+=2;
 
@@ -438,7 +438,7 @@ init_main_page(void) {
     sprintf(main_page.rfs_version, "UNKNOWN");
     main_page.fields_col1[RFS_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.rfs_version, RED_COLOR);
   }
-  log("rfs version field len: %i\n", strlen(main_page.rfs_version));
+  flog("rfs version field len: %i\n", strlen(main_page.rfs_version));
   y+=2;
 
   mvwaddstr(main_page.wp.w, y+2, 2, "Kernel release");
@@ -451,7 +451,7 @@ init_main_page(void) {
     sprintf(main_page.kernel_release, "UNKNOWN");
     main_page.fields_col1[KERNEL_VAL] = mk_label(LABEL_WIDTH-3, 0, y, main_page.kernel_release, RED_COLOR);
   }
-  log("kernel version field len: %i\n", strlen(main_page.kernel_release));
+  flog("kernel version field len: %i\n", strlen(main_page.kernel_release));
   y+=2;
 
   
@@ -476,7 +476,7 @@ init_main_page(void) {
   tm.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
   t = mktime(&tm);
   int offset = (fru.mfg_date[2] | (fru.mfg_date[1]<<8) | (fru.mfg_date[0]<<16));
-  log("offset: 0x%08x\n", offset);
+  flog("offset: 0x%08x\n", offset);
   offset*=60;
   t += offset;
   tm = *localtime(&t);
@@ -672,7 +672,7 @@ update_background(void) {
         set_field_back(main_page.fields_col1[i], BG_COLOR);
         set_field_fore(main_page.fields_col1[i], BG_COLOR);
       } else {
-        log("Found field being edited\n");
+        flog("Found field being edited\n");
         set_field_back(main_page.fields_col1[i], EDIT_COLOR);
         set_field_fore(main_page.fields_col1[i], EDIT_COLOR);
       }

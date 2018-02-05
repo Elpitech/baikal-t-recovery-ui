@@ -74,30 +74,30 @@ check_recovery(char *tar_path, char *recovery_path, char *recovery_mdev, char *r
     pages_params.ext_recovery_valid = false;
   }
   if (ret < 0) {
-    log("Failed to stat %s: %i, errno: %s\n", tar_path, ret, strerror(errno));
+    fdbg("Failed to stat %s: %i, errno: %s\n", tar_path, ret, strerror(errno));
     return;
   }
   ret = stat(recovery_path, &st);
   if (ret < 0) {
-    log("Failed to stat %s: %i, errno: %s\n", recovery_path, ret, strerror(errno));
+    fdbg("Failed to stat %s: %i, errno: %s\n", recovery_path, ret, strerror(errno));
     return;
   }
   ret = stat(recovery_mdev, &st);
   if (ret < 0) {
-    log("Failed to stat %s: %i, errno: %s\n", recovery_mdev, ret, strerror(errno));
+    fdbg("Failed to stat %s: %i, errno: %s\n", recovery_mdev, ret, strerror(errno));
     return;
   }
 
   ret = stat(recovery_line, &st);
   if (ret < 0) {
-    log("Failed to stat %s: %i, errno: %s\n", recovery_line, ret, strerror(errno));
+    fdbg("Failed to stat %s: %i, errno: %s\n", recovery_line, ret, strerror(errno));
     return;
   }
 
-  log("Recovery is found\n");
+  fdbg("Recovery is found\n");
   f = fopen(tar_path, "r");
   if (f == NULL) {
-    warn("Failed to open %s", tar_path);
+    fdbg("Failed to open %s", tar_path);
     return;
   }
   memset(rtp, 0, RECOVERY_NAME_SIZE);
@@ -105,17 +105,17 @@ check_recovery(char *tar_path, char *recovery_path, char *recovery_mdev, char *r
   fclose(f);
   f = fopen(recovery_mdev, "r");
   if (f == NULL) {
-    warn("Failed to open %s", recovery_mdev);
+    fdbg("Failed to open %s", recovery_mdev);
     return;
   }
   memset(rmdev, 0, RECOVERY_NAME_SIZE);
   fread(rmdev, RECOVERY_NAME_SIZE, sizeof(uint8_t), f);
   fclose(f);
 
-  log("Recovery tar is reported at: %s, checking\n", rtp);
+  fdbg("Recovery tar is reported at: %s, checking\n", rtp);
   ret = stat(rtp, &st);
   if (ret < 0) {
-    warn("Failed to stat %s: %i, errno: %s\n", rtp, ret, strerror(errno));
+    fdbg("Failed to stat %s: %i, errno: %s\n", rtp, ret, strerror(errno));
     if (int_recovery) {
       set_field_buffer(recovery_page.fields[label], 0, INT_REC_TXT_NOTFOUND);
     } else {
@@ -124,16 +124,16 @@ check_recovery(char *tar_path, char *recovery_path, char *recovery_mdev, char *r
     return;
   }
   if (int_recovery) {
-    log("Internal recovery seems to be present\n");
+    fdbg("Internal recovery seems to be present\n");
     pages_params.int_recovery_valid = true;
   } else {
-    log("External recovery seems to be present\n");
+    fdbg("External recovery seems to be present\n");
     pages_params.ext_recovery_valid = true;
   }
   if (!int_recovery) {
     f = fopen(recovery_line, "r");
     if (f == NULL) {
-      warn("Failed to open %s", recovery_line);
+      fdbg("Failed to open %s", recovery_line);
       return;
     }
     char buf[256];
@@ -159,7 +159,7 @@ check_rom(const char *rom_path, enum fields label, const char *field_text, bool 
   }
   ret = stat(rom_path, &st);
   if (ret < 0) {
-    log("Failed to stat %s: %i, errno: %s\n", rom_path, ret, strerror(errno));
+    flog("Failed to stat %s: %i, errno: %s\n", rom_path, ret, strerror(errno));
     if ((!pages_params.usb_rom_valid) && (!pages_params.web_rom_valid)) {
       set_field_buffer(recovery_page.fields[label], 0, ROM_NOTFOUND);
     }
@@ -176,16 +176,16 @@ check_rom(const char *rom_path, enum fields label, const char *field_text, bool 
   }
   ret = stat(ptr, &st);
   if (ret < 0) {
-    log("Failed to stat %s: %i, errno: %s\n", ptr, ret, strerror(errno));
+    flog("Failed to stat %s: %i, errno: %s\n", ptr, ret, strerror(errno));
     if ((!pages_params.usb_rom_valid) && (!pages_params.web_rom_valid)) {
       set_field_buffer(recovery_page.fields[label], 0, ROM_NOTFOUND);
     }
     free(ptr);
     return;
   }
-  log("ROM update found, checking size\n");
+  flog("ROM update found, checking size\n");
   if ((16*MB)!=st.st_size) {
-    err("ROM size is wrong: %lli instead of %i\n", st.st_size, 16*MB);
+    ferr("ROM size is wrong: %lli instead of %i\n", st.st_size, 16*MB);
     if ((!pages_params.usb_rom_valid) && (!pages_params.web_rom_valid)) {
       set_field_buffer(recovery_page.fields[label], 0, ROM_NOTFOUND);
     }
@@ -194,7 +194,7 @@ check_rom(const char *rom_path, enum fields label, const char *field_text, bool 
   }
   if ((!pages_params.usb_rom_valid) && (!pages_params.web_rom_valid)) {
     if (strlen(ptr)>=ROM_URL_SIZE) {
-      err("Path is too large\n");
+      ferr("Path is too large\n");
       if ((!pages_params.usb_rom_valid) && (!pages_params.web_rom_valid)) {
         set_field_buffer(recovery_page.fields[label], 0, ROM_NOTFOUND);
       }
@@ -316,7 +316,7 @@ recovery_page_process(int ch) {
     switch (ch) {
     case RKEY_ENTER://KEY_ENTER:
     {
-      log("Recovery: enter pressed\n");
+      flog("Recovery: enter pressed\n");
       FIELD *f = current_field(recovery_page.f);
       if (f == recovery_page.fields[ROM_URL_LABEL]) {
         pages_params.use_arrows = false;
@@ -324,30 +324,30 @@ recovery_page_process(int ch) {
       } else if (f == recovery_page.fields[EXT_RECOVERY_LABEL]) {
         if (pages_params.ext_recovery_valid) {
           pages_params.start = START_EXT;
-          log("Set start external recovery flag\n");
+          flog("Set start external recovery flag\n");
         } else {
-          log("Recovery is not considered valid\n");
+          flog("Recovery is not considered valid\n");
         }
       } else if (f == recovery_page.fields[INT_RECOVERY_LABEL]) {
         if (pages_params.int_recovery_valid) {
           pages_params.start = START_INT;
-          log("Set start internal recovery flag\n");
+          flog("Set start internal recovery flag\n");
         } else {
-          log("Recovery is not considered valid\n");
+          flog("Recovery is not considered valid\n");
         }
       } else if (f == recovery_page.fields[ROM_UPDATE_LABEL]) {
         if (pages_params.usb_rom_valid || pages_params.web_rom_valid) {
           pages_params.start = START_ROM_UP;
-          log("Set start rom update flag\n");
+          flog("Set start rom update flag\n");
         } else {
-          log("ROM is not considered valid\n");
+          flog("ROM is not considered valid\n");
         }
       } else if (f == recovery_page.fields[ROM_DOWNLOAD_LABEL]) {
         char *buf = field_buffer(recovery_page.fields[ROM_URL_LABEL], 0);
         //int len = strlen(buf);
         memcpy(pages_params.rom_url, buf, ROM_URL_SIZE);
         pages_params.start = START_ROM_DOWN;
-        log("Set start rom download flag\n");
+        flog("Set start rom download flag\n");
       }
     }
     break;

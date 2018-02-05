@@ -69,8 +69,9 @@ init_top_menu(struct window_params *main, struct window_params *boot, struct win
   top_menu.bottom_w = newwin(1, TOP_MENU_W, LINES-1, 0);
   wbkgd(top_menu.bottom_w, BG_COLOR);
   
-  const char nav_text[] = "      Enter/ESC: selection | Left/Right/Up/Down: navigation | F6: exit | F10: save and exit";
-  mvwaddstr(top_menu.bottom_w, 0, 0, nav_text);
+  const char nav_text[] = "Enter/ESC: selection | Left/Right/Up/Down: navigation | F6: exit | F10: save and exit";
+  int offset = (COLS-strlen(nav_text))/2;
+  mvwaddstr(top_menu.bottom_w, 0, offset, nav_text);
 
   post_menu(top_menu.m);
   redrawwin(top_menu.w);
@@ -86,11 +87,11 @@ hide_all_panels_except(struct window_params *p) {
   for (;i<(N_ITEMS);i++) {
     t = (struct window_params *)item_userptr(top_menu.items[i]);
     if (t == p) {
-      log("Show panel %i\n", i);
+      flog("Show panel %i\n", i);
       show_panel(t->p);
       t->hidden = false;
     } else {
-      log("Hide panel %i\n", i);
+      flog("Hide panel %i\n", i);
       hide_panel(t->p);
       t->hidden = true;
     }

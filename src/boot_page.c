@@ -73,7 +73,7 @@ init_boot_page(void) {
   getmaxyx(boot_page.wp.w, height, width);
   (void)height;
 
-  log("sata boot device: %s\n", fru.bootdevice);
+  flog("sata boot device: %s\n", fru.bootdevice);
 
   mvwaddstr(boot_page.wp.w, 2, 2, "SATA boot priority");
   mvwaddstr(boot_page.wp.w, 4, 2, "Boot partition");
@@ -109,19 +109,19 @@ init_boot_page(void) {
 
 void
 boot_save_bootdev(void) {
-  log("Save boot device\n");
+  flog("Save boot device\n");
   char *ptr = field_buffer(boot_page.fields[BOOT_DEVICE_VAL], 0);
   int i = 0;
-  msg("PTR:\n");
+  fmsg("PTR:\n");
   for (;i<16;i++) {
-    msg("%02x ", ptr[i]);
+    fmsg("%02x ", ptr[i]);
     if (ptr[i] == ' ') {
       ptr[i] = '\0';
       break;
     }
   }
-  msg("\n");
-  log("Obtained buffer: [%s]\n", ptr);
+  fmsg("\n");
+  flog("Obtained buffer: [%s]\n", ptr);
   //int len = strlen(ptr);
   //memcpy(fru.bootdevice, ptr, (len>FRU_STR_MAX?FRU_STR_MAX:len));
   fru_mrec_update_bootdevice(&fru, (uint8_t *)ptr);
@@ -129,7 +129,7 @@ boot_save_bootdev(void) {
 
 void
 boot_save_power_policy(void) {
-  log("Save power policy\n");
+  flog("Save power policy\n");
   uint32_t bmc_version = 0;
   bmc_version |= pages_params.bmc_version[0]<<16;
   bmc_version |= pages_params.bmc_version[1]<<8;
@@ -141,7 +141,7 @@ boot_save_power_policy(void) {
       if (strncmp(ptr, power_policies[i], strlen(power_policies[i])) == 0) {
         //fix power policy here
         if (i == PP_KEEP) {
-          warn("PP_KEEP support is disabled");
+          fwarn("PP_KEEP support is disabled");
           i = PP_ON;
         }
         fru_mrec_update_power_policy(&fru, i);
@@ -149,7 +149,7 @@ boot_save_power_policy(void) {
         return;
       }
     }
-    err("Unknown power policy: %s", ptr);
+    ferr("Unknown power policy: %s", ptr);
   }
 }
 

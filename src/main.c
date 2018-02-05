@@ -57,7 +57,7 @@ load(void) {
   struct stat st;
   ret = stat(STATE_PATH, &st);
   if (ret < 0) {
-    log("Failed to stat %s: %i, errno: %s\n", STATE_PATH, ret, strerror(errno));
+    flog("Failed to stat %s: %i, errno: %s\n", STATE_PATH, ret, strerror(errno));
     return -1;
   }
   f = fopen(STATE_PATH, "r");
@@ -86,17 +86,17 @@ int main(void) {
   //fd_set fds;
 
   logfile = fopen("/var/log/recovery-ui.log", "w");
-  log("Started log\n");
-  log("ttyname: %s\n", ttyname(0));
+  flog("Started log\n");
+  flog("ttyname: %s\n", ttyname(0));
   
   //setlocale(LC_ALL, "ru_RU.UTF-8");
-  log("Parse FRU\n");
+  flog("Parse FRU\n");
   if (fru_open_parse()) {
     sleep(1);
     fru_open_parse();
   }
 	initscr();			/* Start curses mode 		*/
-  log("Start color\n");
+  flog("Start color\n");
   start_color();
 	raw();				/* Line buffering disabled	*/
 	keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
@@ -113,7 +113,8 @@ int main(void) {
   init_pair(7, COLOR_WHITE, COLOR_RED);
   init_pair(8, COLOR_WHITE, COLOR_BLACK);
   curs_set(0);
-  log("Init done\n");
+  flog("Init done\n");
+  flog("Available screen space: %ix%i", COLS, LINES);
   
   init_main_page();
   init_boot_page();
@@ -132,7 +133,7 @@ int main(void) {
 	while((esc <= 2) && (pages_params.start == START_NONE)) {
     ch = wgetch(stdscr);
     if (ch != ERR) {
-      log("CH: 0x%08x\n", ch);
+      flog("CH: 0x%08x\n", ch);
       if (ch != RKEY_ESC) {
         esc = 0;
       } else {

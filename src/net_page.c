@@ -78,7 +78,7 @@ get_ip_addr(char *buf) {
   bool correct_value = false;
 
   if (getifaddrs(&ifaddr) == -1) {
-    err("getifaddrs failed to obtain IP");
+    ferr("getifaddrs failed to obtain IP");
     return -1;
   }
 
@@ -87,20 +87,20 @@ get_ip_addr(char *buf) {
       continue;
     s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), buf, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
     if ((strcmp(ifa->ifa_name,"eth0")==0) && (ifa->ifa_addr->sa_family==AF_INET)) {
-      log("ifa_flags: %08x\n", ifa->ifa_flags);
+      flog("ifa_flags: %08x\n", ifa->ifa_flags);
       if (s != 0) {
-        err("getnameinfo() failed: %s\n", gai_strerror(s));
+        ferr("getnameinfo() failed: %s\n", gai_strerror(s));
         memset(buf, 0, NI_MAXHOST);
         return -2;
       }
       if (! (ifa->ifa_flags & IFF_UP)) {
-        log("Interface seems to be down\n");
+        flog("Interface seems to be down\n");
         memset(buf, 0, NI_MAXHOST);
         return -3;
       }
       correct_value = true;
-      log("\tInterface : <%s>\n", ifa->ifa_name );
-      log("\t  Address : <%s>\n", buf); 
+      flog("\tInterface : <%s>\n", ifa->ifa_name );
+      flog("\t  Address : <%s>\n", buf); 
     }
   }
   
@@ -208,7 +208,7 @@ net_save_mac(int iface) {
   mac[5] = temp&0xff;
   temp = 0;
 
-  log("Save MAC: [%02x:%02x:%02x:%02x:%02x:%02x]\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  flog("Save MAC: [%02x:%02x:%02x:%02x:%02x:%02x]\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   fru_mrec_update_mac(&fru, mac, iface);
 }
 
@@ -270,7 +270,7 @@ net_page_process(int ch) {
     case RKEY_ENTER:
       if (f == net_page.fields[DHCP_LABEL]) {
         pages_params.start = START_DHCP;
-        log("Set start dhcp flag\n");
+        flog("Set start dhcp flag\n");
       } else {
         net_page.edit_mode = true;
         pages_params.use_arrows = false;
