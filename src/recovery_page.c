@@ -352,10 +352,14 @@ recovery_page_process(int ch) {
     }
     break;
     case KEY_DOWN:
-      form_driver(recovery_page.f, REQ_NEXT_FIELD);
+      if (!recovery_page.edit_mode) {
+        form_driver(recovery_page.f, REQ_NEXT_FIELD);
+      }
       break;
     case KEY_UP:
-      form_driver(recovery_page.f, REQ_PREV_FIELD);
+      if (!recovery_page.edit_mode) {
+        form_driver(recovery_page.f, REQ_PREV_FIELD);
+      }
       break;
     case KEY_BACKSPACE:
 		case 127:
@@ -372,10 +376,14 @@ recovery_page_process(int ch) {
       form_driver(recovery_page.f, ch);
       break;
     case KEY_LEFT:
-      form_driver(recovery_page.f, REQ_PREV_CHAR);
+      if (recovery_page.edit_mode) {
+        form_driver(recovery_page.f, REQ_PREV_CHAR);
+      }
       break;
     case KEY_RIGHT:
-      form_driver(recovery_page.f, REQ_NEXT_CHAR);
+      if (recovery_page.edit_mode) {
+        form_driver(recovery_page.f, REQ_NEXT_CHAR);
+      }
       break;
     default:
       if (recovery_page.edit_mode) {
