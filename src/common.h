@@ -26,12 +26,6 @@ extern FILE *logfile;
 #define fdbg(...)
 #endif
 
-struct spinner_arg {
-  int current_str;
-  int n_str;
-  char **strs;
-};
-
 #define VAR_PREFIX               "/var/run/recoveryui/"
 #define INT_RECOVERY_PATH        "/var/run/recoveryui/int/recovery.rc"
 #define INT_RECOVERY_TAR_PATH    "/var/run/recoveryui/int/recovery-tar-path"

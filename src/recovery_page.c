@@ -17,7 +17,7 @@
 
 #include "common.h"
 #include "pages.h"
-#include "main_page.h"
+#include "field_utils.h"
 #include "top_menu.h"
 #include "fru.h"
 
@@ -33,26 +33,59 @@
 #define ROM_DOWNLOAD         "          Start"
 
 #define LABEL_WIDTH 25
+#define COL1_W (LABEL_WIDTH-2)
+#define COL2_OFF (COL1_W)
+#define COL2_W (LABEL_WIDTH-1)
+#define COL3_OFF (COL2_OFF+COL2_W)
+#define COL3_W (LABEL_WIDTH+2)
+#define COL4_OFF (COL3_OFF+COL3_W)
+#define COL4_W (LABEL_WIDTH)
+
 #define KB 1024
 #define MB (1024*KB)
 
 enum fields {
   EXT_RECOVERY_LABEL = 0,
+  EXT_RECOVERY_BTN,
   INT_RECOVERY_LABEL,
+  INT_RECOVERY_BTN,
   ROM_UPDATE_LABEL,
+  ROM_UPDATE_BTN,
   ROM_URL_LABEL,
+  ROM_URL_VAL,
   ROM_DOWNLOAD_LABEL,
+  ROM_DOWNLOAD_BTN,
   NULL_VAL,
   N_FIELDS=NULL_VAL
 };
 
+static struct field_par fp[] = {
+  [EXT_RECOVERY_LABEL] = LABEL_PAR(0, 0, COL1_W, "USB recovery", PAGE_COLOR, PAGE_COLOR),
+  [EXT_RECOVERY_BTN] = BUTTON_PAR(COL2_OFF, 0, COL2_W, EXT_REC_TXT_NOTFOUND, BG_COLOR, BG_COLOR),
+  
+  [INT_RECOVERY_LABEL] = LABEL_PAR(0, 2, COL1_W, "Restore backup", PAGE_COLOR, PAGE_COLOR),
+  [INT_RECOVERY_BTN] = BUTTON_PAR(COL2_OFF, 2, COL2_W, INT_REC_TXT_NOTFOUND, BG_COLOR, BG_COLOR),
+
+  [ROM_UPDATE_LABEL] = LABEL_PAR(0, 4, COL1_W, "Update ROM", PAGE_COLOR, PAGE_COLOR),
+  [ROM_UPDATE_BTN] = BUTTON_PAR(COL2_OFF, 4, COL2_W, ROM_NOTFOUND, BG_COLOR, BG_COLOR),
+  
+  [ROM_URL_LABEL] = LABEL_PAR(0, 6, COL1_W, "ROM URL", PAGE_COLOR, PAGE_COLOR),
+  [ROM_URL_VAL] = LINE_PAR(COL2_OFF, 6, COL2_W, "", ".*", BG_COLOR, BG_COLOR, false, ROM_URL_SIZE-1, false),
+  
+  [ROM_DOWNLOAD_LABEL] = LABEL_PAR(0, 8, COL1_W, "Download ROM", PAGE_COLOR, PAGE_COLOR),
+  [ROM_DOWNLOAD_BTN] = BUTTON_PAR(COL2_OFF, 8, COL2_W, ROM_DOWNLOAD, BG_COLOR, BG_COLOR),
+};
+
 static struct {
   struct window_params wp;
-  WINDOW *sw;
-  FIELD *fields[N_FIELDS+1];
-	FORM  *f;
+  WINDOW *w;
   char url[ROM_URL_SIZE];
+  FIELD *fields[N_FIELDS+1];
+  FORM *form;
   bool edit_mode;
+  bool selected;
+  FIELD *first_active;
+  FIELD *last_active;
 } recovery_page;
 
 void
@@ -214,20 +247,23 @@ check_rom(const char *rom_path, enum fields label, const char *field_text, bool 
 
 void
 check_ext_recovery(void) {
-  check_recovery(EXT_RECOVERY_TAR_PATH, EXT_RECOVERY_PATH, EXT_RECOVERY_MDEV, EXT_RECOVERY_LINE, EXT_RECOVERY_LABEL, false);
+  check_recovery(EXT_RECOVERY_TAR_PATH, EXT_RECOVERY_PATH, EXT_RECOVERY_MDEV, EXT_RECOVERY_LINE, EXT_RECOVERY_BTN, false);
 }
 
 void
 check_int_recovery(void) {
-  check_recovery(INT_RECOVERY_TAR_PATH, INT_RECOVERY_PATH, INT_RECOVERY_MDEV, INT_RECOVERY_LINE, INT_RECOVERY_LABEL, true);
+  check_recovery(INT_RECOVERY_TAR_PATH, INT_RECOVERY_PATH, INT_RECOVERY_MDEV, INT_RECOVERY_LINE, INT_RECOVERY_BTN, true);
 }
 
 void
 init_recovery_page(void) {
   int width, height;
+  int i = 0;
   recovery_page.edit_mode = false;
-  memset(recovery_page.url, 0, ROM_URL_SIZE);
-  recovery_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
+  recovery_page.selected = false;
+  recovery_page.first_active = NULL;
+  recovery_page.last_active = NULL;
+  recovery_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);
   box(recovery_page.wp.w, 0, 0);
   wbkgd(recovery_page.wp.w, PAGE_COLOR);
 
@@ -236,25 +272,26 @@ init_recovery_page(void) {
   getmaxyx(recovery_page.wp.w, height, width);
   (void)height;
 
-  mvwaddstr(recovery_page.wp.w, EXT_RECOVERY_LABEL*2+2, 2, "USB recovery");
-  recovery_page.fields[EXT_RECOVERY_LABEL] = mk_button(LABEL_WIDTH, 0, EXT_RECOVERY_LABEL, EXT_REC_TXT_NOTFOUND, BG_COLOR);
-  mvwaddstr(recovery_page.wp.w, INT_RECOVERY_LABEL*2+2, 2, "Restore backup");
-  recovery_page.fields[INT_RECOVERY_LABEL] = mk_button(LABEL_WIDTH, 0, INT_RECOVERY_LABEL*2, INT_REC_TXT_NOTFOUND, BG_COLOR);
-  mvwaddstr(recovery_page.wp.w, ROM_UPDATE_LABEL*2+2, 2, "Update ROM");
-  recovery_page.fields[ROM_UPDATE_LABEL] = mk_button(LABEL_WIDTH, 0, ROM_UPDATE_LABEL*2, ROM_NOTFOUND, BG_COLOR);
-  mvwaddstr(recovery_page.wp.w, ROM_URL_LABEL*2+2, 2, "ROM URL");
-  recovery_page.fields[ROM_URL_LABEL] = mk_editable_field_regex_ex(LABEL_WIDTH, 0, ROM_URL_LABEL*2, recovery_page.url, ".*", BG_COLOR, false, false, ROM_URL_SIZE-1);
-  mvwaddstr(recovery_page.wp.w, ROM_DOWNLOAD_LABEL*2+2, 2, "Download ROM");
-  recovery_page.fields[ROM_DOWNLOAD_LABEL] = mk_button(LABEL_WIDTH, 0, ROM_DOWNLOAD_LABEL*2, ROM_DOWNLOAD, BG_COLOR);
+  for (i=0; i<N_FIELDS; i++) {
+    recovery_page.fields[i] = mk_field(&fp[i]);
+    if (fp[i].ft != FT_LABEL) {
+      if (recovery_page.first_active == NULL) {
+        recovery_page.first_active = recovery_page.fields[i];
+      }
+      recovery_page.last_active = recovery_page.fields[i];
+    }
+  }
   recovery_page.fields[NULL_VAL] = NULL;
   
-  recovery_page.f = new_form(recovery_page.fields);
-  scale_form(recovery_page.f, &height, &width);
-  set_form_win(recovery_page.f, recovery_page.wp.w);
-  recovery_page.sw = derwin(recovery_page.wp.w, height, LABEL_WIDTH, 2, LABEL_WIDTH);
-  set_form_sub(recovery_page.f, recovery_page.sw);
+  recovery_page.form = new_form(recovery_page.fields);
+  form_opts_off(recovery_page.form, O_NL_OVERLOAD);
+  form_opts_off(recovery_page.form, O_BS_OVERLOAD);
+  scale_form(recovery_page.form, &height, &width);
+  set_form_win(recovery_page.form, recovery_page.wp.w);
+  recovery_page.w = derwin(recovery_page.wp.w, height, width, 2, 2);
+  set_form_sub(recovery_page.form, recovery_page.w);
 
-  post_form(recovery_page.f);
+  post_form(recovery_page.form);
 
   redrawwin(recovery_page.wp.w);
 
@@ -263,7 +300,7 @@ init_recovery_page(void) {
 
 int
 recovery_page_store(FILE *f) {
-  char *url = field_buffer(recovery_page.fields[ROM_URL_LABEL], 0);
+  char *url = field_buffer(recovery_page.fields[ROM_URL_VAL], 0);
   return fprintf(f, "%s\n", url);
 }
 
@@ -284,20 +321,8 @@ recovery_page_load(FILE *f) {
   }
   memcpy(recovery_page.url, ptr, l);
   free(ptr);
-  set_field_buffer(recovery_page.fields[ROM_URL_LABEL], 0, recovery_page.url);
+  set_field_buffer(recovery_page.fields[ROM_URL_VAL], 0, recovery_page.url);
   return 0;
-}
-
-static void
-update_background(void) {
-  if (recovery_page.edit_mode) {
-    FIELD *f = current_field(recovery_page.f);
-    if (f == recovery_page.fields[ROM_URL_LABEL]) {
-      set_field_back(recovery_page.fields[ROM_URL_LABEL], EDIT_COLOR);
-      set_field_fore(recovery_page.fields[ROM_URL_LABEL], EDIT_COLOR);
-    }
-    //wnoutrefresh(recovery_page.wp.w);
-  }
 }
 
 int
@@ -305,94 +330,117 @@ recovery_page_process(int ch) {
   static uint64_t last_t = 0;
   uint64_t cur_t = time(NULL);
   if (!recovery_page.wp.hidden) {
-    curs_set(1);
     if ((cur_t-last_t)>2) {
       last_t = cur_t;
       check_ext_recovery();
       check_int_recovery();
-      check_rom(USB_UPDATE_ROM_PATH, ROM_UPDATE_LABEL, ROM_FOUND_USB, true);
-      check_rom(WEB_UPDATE_ROM_PATH, ROM_UPDATE_LABEL, ROM_FOUND_WEB, false);
+      check_rom(USB_UPDATE_ROM_PATH, ROM_UPDATE_BTN, ROM_FOUND_USB, true);
+      check_rom(WEB_UPDATE_ROM_PATH, ROM_UPDATE_BTN, ROM_FOUND_WEB, false);
     }
-    switch (ch) {
-    case RKEY_ENTER://KEY_ENTER:
-    {
-      flog("Recovery: enter pressed\n");
-      FIELD *f = current_field(recovery_page.f);
-      if (f == recovery_page.fields[ROM_URL_LABEL]) {
+    FIELD *f = current_field(recovery_page.form);
+    if (!recovery_page.selected) {
+      curs_set(0);
+      switch (ch) {
+      case KEY_DOWN:
+        recovery_page.selected = true;
         pages_params.use_arrows = false;
+        recovery_page.edit_mode = false;
+        break;
+      }
+    } else {
+      curs_set(1);
+      switch (ch) {
+      case KEY_DOWN:
+        if (recovery_page.edit_mode) {
+          field_par_unset_line_bg(fp, recovery_page.fields, N_FIELDS);
+          recovery_page.edit_mode = false;
+        }
+        if (f != recovery_page.last_active) {
+          form_driver(recovery_page.form, REQ_NEXT_FIELD);
+        }
+        break;
+      case KEY_UP:
+        if (recovery_page.edit_mode) {
+          field_par_unset_line_bg(fp, recovery_page.fields, N_FIELDS);
+          recovery_page.edit_mode = false;
+        }
+        if (f != recovery_page.first_active) {
+          form_driver(recovery_page.form, REQ_PREV_FIELD);
+        } else {
+          recovery_page.selected = false;
+          pages_params.use_arrows = true;
+        }
+        break;
+      case RKEY_ENTER:
+      {
+        flog("enter pressed\n");
+        FIELD *f = current_field(recovery_page.form);
+        if (f == recovery_page.fields[EXT_RECOVERY_BTN]) {
+          if (pages_params.ext_recovery_valid) {
+            pages_params.start = START_EXT;
+            flog("Set start external recovery flag\n");
+          } else {
+            flog("Recovery is not considered valid\n");
+          }
+        } else if (f == recovery_page.fields[INT_RECOVERY_BTN]) {
+          if (pages_params.int_recovery_valid) {
+            pages_params.start = START_INT;
+            flog("Set start internal recovery flag\n");
+          } else {
+            flog("Recovery is not considered valid\n");
+          }
+        } else if (f == recovery_page.fields[ROM_UPDATE_BTN]) {
+          if (pages_params.usb_rom_valid || pages_params.web_rom_valid) {
+            pages_params.start = START_ROM_UP;
+            flog("Set start rom update flag\n");
+          } else {
+            flog("ROM is not considered valid\n");
+          }
+        } else if (f == recovery_page.fields[ROM_DOWNLOAD_BTN]) {
+          char *buf = field_buffer(recovery_page.fields[ROM_URL_VAL], 0);
+          //int len = strlen(buf);
+          memcpy(pages_params.rom_url, buf, ROM_URL_SIZE);
+          pages_params.start = START_ROM_DOWN;
+          flog("Set start rom download flag\n");
+        }
+      }
+      break;
+      case RKEY_ESC:
+        break;
+      case KEY_LEFT:
+        if (field_opts(f) & O_EDIT) {
+          recovery_page.edit_mode = true;
+          field_par_set_line_bg(fp, f, recovery_page.fields, N_FIELDS);
+          form_driver(recovery_page.form, REQ_PREV_CHAR);
+        }
+        break;
+      case KEY_RIGHT:
+        if (field_opts(f) & O_EDIT) {
+          recovery_page.edit_mode = true;
+          field_par_set_line_bg(fp, f, recovery_page.fields, N_FIELDS);
+          form_driver(recovery_page.form, REQ_NEXT_CHAR);
+        }
+        break;
+      case KEY_BACKSPACE:
+      case 127:
         recovery_page.edit_mode = true;
-      } else if (f == recovery_page.fields[EXT_RECOVERY_LABEL]) {
-        if (pages_params.ext_recovery_valid) {
-          pages_params.start = START_EXT;
-          flog("Set start external recovery flag\n");
-        } else {
-          flog("Recovery is not considered valid\n");
-        }
-      } else if (f == recovery_page.fields[INT_RECOVERY_LABEL]) {
-        if (pages_params.int_recovery_valid) {
-          pages_params.start = START_INT;
-          flog("Set start internal recovery flag\n");
-        } else {
-          flog("Recovery is not considered valid\n");
-        }
-      } else if (f == recovery_page.fields[ROM_UPDATE_LABEL]) {
-        if (pages_params.usb_rom_valid || pages_params.web_rom_valid) {
-          pages_params.start = START_ROM_UP;
-          flog("Set start rom update flag\n");
-        } else {
-          flog("ROM is not considered valid\n");
-        }
-      } else if (f == recovery_page.fields[ROM_DOWNLOAD_LABEL]) {
-        char *buf = field_buffer(recovery_page.fields[ROM_URL_LABEL], 0);
-        //int len = strlen(buf);
-        memcpy(pages_params.rom_url, buf, ROM_URL_SIZE);
-        pages_params.start = START_ROM_DOWN;
-        flog("Set start rom download flag\n");
+        field_par_set_line_bg(fp, f, recovery_page.fields, N_FIELDS);
+        form_driver(recovery_page.form, REQ_DEL_PREV);
+        break;
+      case KEY_DC:
+        recovery_page.edit_mode = true;
+        field_par_set_line_bg(fp, f, recovery_page.fields, N_FIELDS);
+        form_driver(recovery_page.form, REQ_DEL_CHAR);
+        break;
+      case -1:
+        break;
+      default:
+        recovery_page.edit_mode = true;
+        field_par_set_line_bg(fp, f, recovery_page.fields, N_FIELDS);
+        form_driver(recovery_page.form, ch);
+        break;
       }
     }
-    break;
-    case KEY_DOWN:
-      if (!recovery_page.edit_mode) {
-        form_driver(recovery_page.f, REQ_NEXT_FIELD);
-      }
-      break;
-    case KEY_UP:
-      if (!recovery_page.edit_mode) {
-        form_driver(recovery_page.f, REQ_PREV_FIELD);
-      }
-      break;
-    case KEY_BACKSPACE:
-		case 127:
-      form_driver(recovery_page.f, REQ_DEL_PREV);
-      break;
-    case KEY_DC:
-      form_driver(recovery_page.f, REQ_DEL_CHAR);
-			break;
-    case RKEY_ESC:
-      pages_params.use_arrows = true;
-      recovery_page.edit_mode = false;
-      set_field_back(recovery_page.fields[ROM_URL_LABEL], BG_COLOR);
-      set_field_fore(recovery_page.fields[ROM_URL_LABEL], BG_COLOR);
-      form_driver(recovery_page.f, ch);
-      break;
-    case KEY_LEFT:
-      if (recovery_page.edit_mode) {
-        form_driver(recovery_page.f, REQ_PREV_CHAR);
-      }
-      break;
-    case KEY_RIGHT:
-      if (recovery_page.edit_mode) {
-        form_driver(recovery_page.f, REQ_NEXT_CHAR);
-      }
-      break;
-    default:
-      if (recovery_page.edit_mode) {
-        form_driver(recovery_page.f, ch);
-      }
-      break;
-    }
-    wnoutrefresh(recovery_page.wp.w);
-    update_background();
   }
   return 0;
 }
@@ -400,8 +448,8 @@ recovery_page_process(int ch) {
 void
 deinit_recovery_page(void) {
   int i;
-  unpost_form(recovery_page.f);
-	free_form(recovery_page.f);
+  unpost_form(recovery_page.form);
+	free_form(recovery_page.form);
   for (i=0; i<N_FIELDS; i++)
     free_field(recovery_page.fields[i]);
   delwin(recovery_page.wp.w);

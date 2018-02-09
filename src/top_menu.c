@@ -17,6 +17,18 @@
 #define xstr(a) str(a)
 #define str(a) #a
 
+static const char name_main[] = "Main";
+static const char alt_name_main[] = "MAIN";
+
+static const char name_boot[] = "Boot";
+static const char alt_name_boot[] = "BOOT";
+
+static const char name_network[] = "Network";
+static const char alt_name_network[] = "NETWORK";
+
+static const char name_maintenance[] = "Maintenance";
+static const char alt_name_maintenance[] = "MAINTENANCE";
+
 static struct {
   WINDOW *w;
   WINDOW *bottom_w;
@@ -26,6 +38,8 @@ static struct {
   WINDOW *sw3;
   //WINDOW *sw4;
   ITEM *items[N_ITEMS+1];
+  char *alt_names[N_ITEMS];
+  char *names[N_ITEMS];
   MENU *m;
   //FIELD *help_fields[H_N_FIELDS+1];
 	//FORM  *help_f;
@@ -38,17 +52,26 @@ init_top_menu(struct window_params *main, struct window_params *boot, struct win
   top_menu.w = newwin(TOP_MENU_H, TOP_MENU_W, 0, 0);
   wbkgd(top_menu.w, BG_COLOR);
 
-  top_menu.items[0] = new_item("Main", "MAIN");
+  top_menu.items[0] = new_item(name_main, alt_name_main);
   set_item_userptr(top_menu.items[0], main);
-
-  top_menu.items[1] = new_item("Boot", "BOOT");
-  set_item_userptr(top_menu.items[1], boot);
+  top_menu.names[0] = (char *)name_main;
+  top_menu.alt_names[0] = (char *)alt_name_main;
   
-  top_menu.items[2] = new_item("Network", "NET");
-  set_item_userptr(top_menu.items[2], net);
 
-  top_menu.items[3] = new_item("Maintenance", "MAINT");
+  top_menu.items[1] = new_item(name_boot, alt_name_boot);
+  set_item_userptr(top_menu.items[1], boot);
+  top_menu.names[1] = (char *)name_boot;
+  top_menu.alt_names[1] = (char *)alt_name_boot;
+  
+  top_menu.items[2] = new_item(name_network, alt_name_network);
+  set_item_userptr(top_menu.items[2], net);
+  top_menu.names[2] = (char *)name_network;
+  top_menu.alt_names[2] = (char *)alt_name_network;
+
+  top_menu.items[3] = new_item(name_maintenance, alt_name_maintenance);
   set_item_userptr(top_menu.items[3], rec);
+  top_menu.names[3] = (char *)name_maintenance;
+  top_menu.alt_names[3] = (char *)alt_name_maintenance;
 
   top_menu.items[4] = NULL;
   top_menu.m = new_menu((ITEM **)top_menu.items);
@@ -78,6 +101,18 @@ init_top_menu(struct window_params *main, struct window_params *boot, struct win
   redrawwin(top_menu.bottom_w);
   pages_params.use_arrows = true;
   //win_show(, label, 1);
+}
+
+void
+top_menu_select_current(void) {
+}
+
+void
+top_menu_unselect_all(void) {
+  int i;
+  for (i=0;i<(N_ITEMS);i++) {
+    //set_item_name(top_menu.items[i], top_menu.names[i]);
+  }
 }
 
 void

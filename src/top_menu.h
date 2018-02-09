@@ -12,5 +12,7 @@ int top_menu_store(FILE *f);
 int top_menu_load(FILE *f);
 int top_menu_process(int ch);
 void deinit_top_menu(void);
+void top_menu_select_current(void);
+void top_menu_unselect_all(void);
 
 #endif/*__TOP_MENU_H__*/

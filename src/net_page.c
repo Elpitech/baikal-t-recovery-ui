@@ -20,20 +20,36 @@
 
 #include "common.h"
 #include "pages.h"
-#include "main_page.h"
+#include "field_utils.h"
 #include "top_menu.h"
 #include "fru.h"
 
 #define TAG "NET_PAGE"
 
+#define MAC_SZ (6*3)
 #define LABEL_WIDTH 25
+#define COL1_W (LABEL_WIDTH-2)
+#define COL2_OFF (COL1_W)
+#define COL2_W (MAC_SZ-1)
+#define COL3_OFF (COL2_OFF+COL2_W)
+#define COL3_W (LABEL_WIDTH+2)
+#define COL4_OFF (COL3_OFF+COL3_W)
+#define COL4_W (LABEL_WIDTH)
+
 //                     |                 |
 #define DHCP_LABEL_TXT "      Start"
 
 #define IFF_UP (1<<0)
+#if ! defined(BOARD_MITX4)
+#define MAC0_TXT "MAC0 address"
+#else
+#define MAC0_TXT "MAC address"
+#endif
 
 enum mac_fields {
   DHCP_LABEL,
+  DHCP_BTN,
+  MAC_LABEL,
   MAC0_VAL,
   MAC1_VAL,
   MAC2_VAL,
@@ -41,12 +57,15 @@ enum mac_fields {
   MAC4_VAL,
   MAC5_VAL,
 #if ! defined(BOARD_MITX4)
+  MAC1_LABEL,
   MAC10_VAL,
   MAC11_VAL,
   MAC12_VAL,
   MAC13_VAL,
   MAC14_VAL,
   MAC15_VAL,
+
+  MAC2_LABEL,
   MAC20_VAL,
   MAC21_VAL,
   MAC22_VAL,
@@ -54,21 +73,59 @@ enum mac_fields {
   MAC24_VAL,
   MAC25_VAL,
 #endif
+  CUR_IP_LABEL,
+  CUR_IP_VAL,
   NULL_VAL,
   N_FIELDS=NULL_VAL
 };
 
+static struct field_par fp[] = {
+  [DHCP_LABEL] = LABEL_PAR(0, 0, COL1_W, "DHCP client", PAGE_COLOR, PAGE_COLOR),
+  [DHCP_BTN] = BUTTON_PAR(COL2_OFF, 0, MAC_SZ-1, DHCP_LABEL_TXT, BG_COLOR, BG_COLOR),
+
+  [CUR_IP_LABEL] = LABEL_PAR(0, 2, COL1_W, "Current IP", PAGE_COLOR, PAGE_COLOR),
+  [CUR_IP_VAL] = LABEL_PAR(COL2_OFF, 2, COL1_W, "Current IP", PAGE_COLOR, PAGE_COLOR),
+
+  
+  [MAC_LABEL] = LABEL_PAR(0, 4, COL1_W, MAC0_TXT, PAGE_COLOR, PAGE_COLOR),
+  [MAC0_VAL] = LINE_PAR(COL2_OFF, 4, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC1_VAL] = LINE_PAR(COL2_OFF+3, 4, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC2_VAL] = LINE_PAR(COL2_OFF+6, 4, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC3_VAL] = LINE_PAR(COL2_OFF+9, 4, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC4_VAL] = LINE_PAR(COL2_OFF+12, 4, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC5_VAL] = LINE_PAR(COL2_OFF+15, 4, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+#if ! defined(BOARD_MITX4)
+  [MAC1_LABEL] = LABEL_PAR(0, 4, COL1_W, "MAC1 address", PAGE_COLOR, PAGE_COLOR),
+  [MAC10_VAL] = LINE_PAR(COL2_OFF, 6, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC11_VAL] = LINE_PAR(COL2_OFF+3, 6, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC12_VAL] = LINE_PAR(COL2_OFF+6, 6, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC13_VAL] = LINE_PAR(COL2_OFF+9, 6, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC14_VAL] = LINE_PAR(COL2_OFF+12, 6, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC15_VAL] = LINE_PAR(COL2_OFF+15, 6, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+
+  [MAC2_LABEL] = LABEL_PAR(0, 6, COL1_W, "MAC2 address", PAGE_COLOR, PAGE_COLOR),
+  [MAC20_VAL] = LINE_PAR(COL2_OFF, 8, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC21_VAL] = LINE_PAR(COL2_OFF+3, 8, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC22_VAL] = LINE_PAR(COL2_OFF+6, 8, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC23_VAL] = LINE_PAR(COL2_OFF+9, 8, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC24_VAL] = LINE_PAR(COL2_OFF+12, 8, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+  [MAC25_VAL] = LINE_PAR(COL2_OFF+15, 8, 2, "00", "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR, BG_COLOR, true, 0, true),
+#endif
+};
+
 static struct {
   struct window_params wp;
-  WINDOW *sw;
-  uint32_t shred;
-  char mac0_val[LABEL_WIDTH];
-  char mac1_val[LABEL_WIDTH];
-  char mac2_val[LABEL_WIDTH];
+  WINDOW *w;
+  char mac0_val[MAC_SZ];
+  char mac1_val[MAC_SZ];
+  char mac2_val[MAC_SZ];
   char ip_val[NI_MAXHOST];
   FIELD *fields[N_FIELDS+1];
-	FORM  *f;
+  FORM *form;
   bool edit_mode;
+  bool selected;
+  FIELD *first_active;
+  FIELD *last_active;
 } net_page;
 
 int
@@ -115,10 +172,11 @@ void
 init_net_page(void) {
   int width, height;
   int i = 0;
-  int ret;
-  int cy = 2;
   net_page.edit_mode = false;
-  net_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);//TOP_MENU_H, TOP_MENU_W, 0, 0);
+  net_page.selected = false;
+  net_page.first_active = NULL;
+  net_page.last_active = NULL;
+  net_page.wp.w = newwin(LINES-TOP_MENU_H-1,0,TOP_MENU_H,0);
   box(net_page.wp.w, 0, 0);
   wbkgd(net_page.wp.w, PAGE_COLOR);
 
@@ -127,61 +185,54 @@ init_net_page(void) {
   getmaxyx(net_page.wp.w, height, width);
   (void)height;
 
-  //width = 6*3-1 -> 6 mac fields by 2 symbols = 6*2 + 6-1 single char spaces
-  //this width makes it less ugly
-  mvwaddstr(net_page.wp.w, cy, 2, "DHCP client");
-  net_page.fields[DHCP_LABEL] = mk_button(6*3-1, 0, cy-2, DHCP_LABEL_TXT, BG_COLOR);
+  for (i=0; i<N_FIELDS; i++) {
+    net_page.fields[i] = mk_field(&fp[i]);
+    if (fp[i].ft != FT_LABEL) {
+      if (net_page.first_active == NULL) {
+        net_page.first_active = net_page.fields[i];
+      }
+      net_page.last_active = net_page.fields[i];
+    }
+  }
+  net_page.fields[NULL_VAL] = NULL;
+  
+  net_page.form = new_form(net_page.fields);
+  form_opts_off(net_page.form, O_NL_OVERLOAD);
+  form_opts_off(net_page.form, O_BS_OVERLOAD);
+  scale_form(net_page.form, &height, &width);
+  set_form_win(net_page.form, net_page.wp.w);
+  net_page.w = derwin(net_page.wp.w, height, width, 2, 2);
+  set_form_sub(net_page.form, net_page.w);
 
-  cy+=2;
-#if defined(BOARD_MITX4)
-  mvwaddstr(net_page.wp.w, cy, 2, "MAC address");
-#else
-  mvwaddstr(net_page.wp.w, cy, 2, "MAC0 address");
-#endif
-  memset(net_page.mac0_val, 0, LABEL_WIDTH);
-  for (i=0;i<6; i++) {
-    sprintf(net_page.mac0_val+3*i, "%02x", fru.mac0[i]);
-    net_page.fields[MAC0_VAL+i] = mk_editable_field_regex(2, 3*i, cy-2, net_page.mac0_val+3*i, "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR);
-  }
-  cy+=2;
-#if defined(BOARD_MITX4)
-  field_opts_off(net_page.fields[MAC5_VAL], O_AUTOSKIP);
-#else
-  mvwaddstr(net_page.wp.w, cy, 2, "MAC1 address");
-  memset(net_page.mac1_val, 0, LABEL_WIDTH);
-  for (i=0;i<6; i++) {
-    sprintf(net_page.mac1_val+3*i, "%02x", fru.mac1[i]);
-    net_page.fields[MAC10_VAL+i] = mk_editable_field_regex(2, 3*i, cy-2, net_page.mac1_val+3*i, "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR);
-  }
-  cy+=2;
-  mvwaddstr(net_page.wp.w, cy, 2, "MAC2 address");
-  memset(net_page.mac2_val, 0, LABEL_WIDTH);
-  for (i=0;i<6; i++) {
-    sprintf(net_page.mac2_val+3*i, "%02x", fru.mac2[i]);
-    net_page.fields[MAC20_VAL+i] = mk_editable_field_regex(2, 3*i, cy-2, net_page.mac2_val+3*i, "[0-9a-fA-F][0-9a-fA-F]", BG_COLOR);
-  }
-  cy+=2;
-#endif
+  post_form(net_page.form);
 
-  mvwaddstr(net_page.wp.w, cy, 2, "Current IP");
-  ret = get_ip_addr(net_page.ip_val);
+  redrawwin(net_page.wp.w);
+
+  int ret = get_ip_addr(net_page.ip_val);
   if (ret != 0) {
     sprintf(net_page.ip_val, "N/A");
   }
-  mvwaddstr(net_page.wp.w, cy, LABEL_WIDTH, net_page.ip_val);
+  set_field_buffer(net_page.fields[CUR_IP_VAL], 0, net_page.ip_val);
 
-
-  net_page.fields[NULL_VAL] = NULL;
-  
-  net_page.f = new_form(net_page.fields);
-  scale_form(net_page.f, &height, &width);
-  set_form_win(net_page.f, net_page.wp.w);
-  net_page.sw = derwin(net_page.wp.w, height, LABEL_WIDTH, 2, LABEL_WIDTH);
-  set_form_sub(net_page.f, net_page.sw);
-
-  post_form(net_page.f);
-
-  redrawwin(net_page.wp.w);
+  memset(net_page.mac0_val, 0, MAC_SZ);
+  for (i=0;i<6; i++) {
+    sprintf(net_page.mac0_val+3*i, "%02x", fru.mac0[i]);
+    set_field_buffer(net_page.fields[MAC0_VAL+i], 0, net_page.mac0_val+3*i);
+  }
+#if defined(BOARD_MITX4)
+  field_opts_off(net_page.fields[MAC5_VAL], O_AUTOSKIP);
+#else
+  memset(net_page.mac1_val, 0, MAC_SZ);
+  for (i=0;i<6; i++) {
+    sprintf(net_page.mac1_val+3*i, "%02x", fru.mac1[i]);
+    set_field_buffer(net_page.fields[MAC10_VAL+i], 0, net_page.mac1_val+3*i);
+  }
+  memset(net_page.mac2_val, 0, MAC_SZ);
+  for (i=0;i<6; i++) {
+    sprintf(net_page.mac2_val+3*i, "%02x", fru.mac2[i]);
+    set_field_buffer(net_page.fields[MAC20_VAL+i], 0, net_page.mac2_val+3*i);
+  }
+#endif
 }
 
 void
@@ -212,101 +263,96 @@ net_save_mac(int iface) {
   fru_mrec_update_mac(&fru, mac, iface);
 }
 
-static void
-update_background(FIELD *f) {
-  int i = MAC0_VAL;
-  int last = MAC5_VAL;
-#if ! defined(BOARD_MITX4)
-  last = MAC25_VAL;
-#endif
-  for (;i<=last;i++) {
-    if (net_page.edit_mode && f == net_page.fields[i]) {
-      set_field_back(net_page.fields[i], EDIT_COLOR);
-      set_field_fore(net_page.fields[i], EDIT_COLOR);
-    } else {
-      set_field_back(net_page.fields[i], BG_COLOR);
-      set_field_fore(net_page.fields[i], BG_COLOR);
-    }
-  }
-  //wnoutrefresh(net_page.wp.w);
-}
-
 int
 net_page_process(int ch) {
-  FIELD *f = current_field(net_page.f);
-  FIELD *editable_first = net_page.fields[MAC0_VAL];
-  FIELD *editable_last = net_page.fields[MAC5_VAL];
-#if ! defined(BOARD_MITX4)
-  editable_last = net_page.fields[MAC25_VAL];
-#endif
   if (!net_page.wp.hidden) {
-    curs_set(1);
-    switch (ch) {
-    case KEY_DOWN:
-      if (net_page.edit_mode) {
-        if (f != editable_last) {
-          form_driver(net_page.f, REQ_NEXT_FIELD);
-        }
-      } else {
-        form_driver(net_page.f, REQ_NEXT_FIELD);
-      }
-      break;
-    case KEY_UP:
-      if (net_page.edit_mode) {
-        if (f != editable_first) {
-          form_driver(net_page.f, REQ_PREV_FIELD);
-        }
-      } else {
-        form_driver(net_page.f, REQ_PREV_FIELD);
-      }
-      break;
-		case KEY_BACKSPACE:
-		case 127:
-      form_driver(net_page.f, REQ_DEL_PREV);
-      break;
-    case KEY_DC:
-      form_driver(net_page.f, REQ_DEL_CHAR);
-			break;
-    case RKEY_ENTER:
-      if (f == net_page.fields[DHCP_LABEL]) {
-        pages_params.start = START_DHCP;
-        flog("Set start dhcp flag\n");
-      } else {
-        net_page.edit_mode = true;
+    FIELD *f = current_field(net_page.form);
+    if (!net_page.selected) {
+      curs_set(0);
+      switch (ch) {
+      case KEY_DOWN:
+        net_page.selected = true;
         pages_params.use_arrows = false;
-      }
-      break;
-    case RKEY_ESC:
-      if (net_page.edit_mode) {
-        net_save_mac(0);
-#if ! defined(BOARD_MITX4)
-        net_save_mac(1);
-        net_save_mac(2);
-#endif
-        update_background(NULL);
-        //wrefresh(net_page.wp.w);
-        //wnoutrefresh(net_page.wp.w);
-        //redrawwin(net_page.wp.w);
-        pages_params.use_arrows = true;
         net_page.edit_mode = false;
-        form_driver(net_page.f, ch);
+        break;
       }
-      break;
-    case KEY_LEFT:
-      form_driver(net_page.f, REQ_PREV_CHAR);
-      break;
-    case KEY_RIGHT:
-      form_driver(net_page.f, REQ_NEXT_CHAR);
-      break;
-    default:
-      if (net_page.edit_mode) {
-        form_driver(net_page.f, ch);
+    } else {
+      curs_set(1);
+      switch (ch) {
+      case KEY_DOWN:
+        if (net_page.edit_mode) {
+          net_save_mac(0);
+#if ! defined(BOARD_MITX4)
+          net_save_mac(1);
+          net_save_mac(2);
+#endif
+          field_par_unset_line_bg(fp, net_page.fields, N_FIELDS);
+          net_page.edit_mode = false;
+        }
+        if (f != net_page.last_active) {
+          form_driver(net_page.form, REQ_NEXT_FIELD);
+        }
+        break;
+      case KEY_UP:
+        if (net_page.edit_mode) {
+          net_save_mac(0);
+#if ! defined(BOARD_MITX4)
+          net_save_mac(1);
+          net_save_mac(2);
+#endif
+          field_par_unset_line_bg(fp, net_page.fields, N_FIELDS);
+          net_page.edit_mode = false;
+        }
+        if (f != net_page.first_active) {
+          form_driver(net_page.form, REQ_PREV_FIELD);
+        } else {
+          net_page.selected = false;
+          pages_params.use_arrows = true;
+        }
+        break;
+      case RKEY_ENTER:
+        if (f == net_page.fields[DHCP_BTN]) {
+          pages_params.start = START_DHCP;
+          flog("Set start dhcp flag\n");
+        }
+        break;
+      case RKEY_ESC:
+        break;
+      case KEY_LEFT:
+        if (field_opts(f) & O_EDIT) {
+          net_page.edit_mode = true;
+          field_par_set_line_bg(fp, f, net_page.fields, N_FIELDS);
+          form_driver(net_page.form, REQ_PREV_CHAR);
+        }
+        break;
+      case KEY_RIGHT:
+        if (field_opts(f) & O_EDIT) {
+          net_page.edit_mode = true;
+          field_par_set_line_bg(fp, f, net_page.fields, N_FIELDS);
+          form_driver(net_page.form, REQ_NEXT_CHAR);
+        }
+        break;
+      case KEY_BACKSPACE:
+      case 127:
+        net_page.edit_mode = true;
+        field_par_set_line_bg(fp, f, net_page.fields, N_FIELDS);
+        form_driver(net_page.form, REQ_DEL_PREV);
+        break;
+      case KEY_DC:
+        net_page.edit_mode = true;
+        field_par_set_line_bg(fp, f, net_page.fields, N_FIELDS);
+        form_driver(net_page.form, REQ_DEL_CHAR);
+        break;
+      case -1:
+        break;
+      default:
+        net_page.edit_mode = true;
+        field_par_set_line_bg(fp, f, net_page.fields, N_FIELDS);
+        form_driver(net_page.form, ch);
+        break;
       }
-      break;
+
     }
-    f = current_field(net_page.f);
-    update_background(f);
-    wnoutrefresh(net_page.wp.w);
   }
   return 0;
 }
@@ -314,8 +360,8 @@ net_page_process(int ch) {
 void
 deinit_net_page(void) {
   int i;
-  unpost_form(net_page.f);
-	free_form(net_page.f);
+  unpost_form(net_page.form);
+	free_form(net_page.form);
   for (i=0; i<N_FIELDS; i++)
     free_field(net_page.fields[i]);
   delwin(net_page.wp.w);
