@@ -92,7 +92,7 @@ init_top_menu(struct window_params *main, struct window_params *boot, struct win
   top_menu.bottom_w = newwin(1, TOP_MENU_W, LINES-1, 0);
   wbkgd(top_menu.bottom_w, BG_COLOR);
   
-  const char nav_text[] = "Enter/ESC: selection | Left/Right/Up/Down: navigation | F6: exit | F10: save and exit";
+  const char nav_text[] = "Enter: select | Left/Right: select page | Up/Down: select option | F6: exit | F10: save and exit";
   int offset = (COLS-strlen(nav_text))/2;
   mvwaddstr(top_menu.bottom_w, 0, offset, nav_text);
 
