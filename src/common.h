@@ -40,5 +40,6 @@ extern FILE *logfile;
 #define ROM_UPDATE_SCRIPT_PATH   "/usr/bin/btflash.sh"
 #define ROM_DOWNLOAD_SCRIPT_PATH "/usr/bin/getrom.sh"
 #define STATE_PATH               "/var/run/recoveryui/recovery.state"
+#define NETCONF_SCRIPT_PATH      "/usr/bin/netconf.sh"
 
 #endif/*__COMMON_H__*/
