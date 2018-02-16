@@ -194,6 +194,9 @@ int main(void) {
   case START_DHCP:
     execl("/sbin/udhcpc", "udhcpc", NULL);
     break;
+  case START_IFUP:
+    execl("/bin/ash", "ash", NETCONF_SCRIPT_PATH, pages_params.ip, pages_params.nm, pages_params.gw, pages_params.dns1, NULL);
+    break;
   default:
     break;
   }

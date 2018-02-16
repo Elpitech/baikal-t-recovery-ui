@@ -46,4 +46,8 @@ clean:
 install:
 ifneq ($(PREFIX),.)
 	cp $(PROJECT) $(PREFIX)
+	cp getrom.sh $(PREFIX)
+	chmod +x $(PREFIX)/getrom.sh
+	cp netconf.sh $(PREFIX)
+	chmod +x $(PREFIX)/netconf.sh
 endif

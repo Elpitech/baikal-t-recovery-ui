@@ -1,6 +1,9 @@
 #ifndef __PAGES_H__
 #define __PAGES_H__
 
+#include <sys/socket.h>
+#include <netdb.h>
+
 struct window_params {
   PANEL *p;
   WINDOW *w;
@@ -21,7 +24,8 @@ enum START {
   START_INT,
   START_ROM_UP,
   START_ROM_DOWN,
-  START_DHCP
+  START_IFUP,
+  START_DHCP,
 };
 
 #define RECOVERY_NAME_SIZE 256
@@ -35,6 +39,10 @@ struct pages {
   char ext_recovery_mdev[RECOVERY_NAME_SIZE];
   char rom_url[ROM_URL_SIZE];
   char rom_path[ROM_URL_SIZE];
+  char ip[NI_MAXHOST];
+  char nm[NI_MAXHOST];
+  char gw[NI_MAXHOST];
+  char dns1[NI_MAXHOST];
   bool ext_recovery_valid;
   bool usb_rom_valid;
   bool web_rom_valid;

@@ -18,8 +18,10 @@ field_par_set_line_bg(struct field_par *fp, FIELD *f, FIELD **fields, int n_fiel
         set_field_back(fields[i], EDIT_COLOR);
         set_field_fore(fields[i], EDIT_COLOR);
       } else {
-        set_field_back(fields[i], BG_COLOR);
-        set_field_fore(fields[i], BG_COLOR);
+        if (field_opts(fields[i]) & O_ACTIVE) {
+          set_field_back(fields[i], BG_COLOR);
+          set_field_fore(fields[i], BG_COLOR);
+        }
       }
     }
   }
@@ -30,14 +32,16 @@ field_par_unset_line_bg(struct field_par *fp, FIELD **fields, int n_fields) {
   int i;
   for (i=0; i<n_fields; i++) {
     if (fp[i].ft == FT_LINE) {
-      set_field_back(fields[i], BG_COLOR);
-      set_field_fore(fields[i], BG_COLOR);
+      if (field_opts(fields[i]) & O_ACTIVE) {
+        set_field_back(fields[i], BG_COLOR);
+        set_field_fore(fields[i], BG_COLOR);
+      }
     }
   }
 }
 
 FIELD *
-mk_spinner(int w, int x, int y, char *strings, int default_n, chtype c) {
+mk_spinner(int w, int x, int y, char *strings, int default_n, chtype c, bool centered) {
   flog("mk_spinner\n");
   FIELD *f = new_field(1, w, y, x, 0, 0);
   int i = 0;
@@ -84,6 +88,9 @@ mk_spinner(int w, int x, int y, char *strings, int default_n, chtype c) {
   set_field_userptr(f, (void *)s);
   field_opts_off(f, O_EDIT);
   set_field_buffer(f, 0, s->strs[default_n]);
+  if (centered) {
+    set_field_just(f, JUSTIFY_CENTER);
+  }
   set_field_fore(f, c);
   set_field_back(f, c);
   return f;  
@@ -135,10 +142,10 @@ mk_field(struct field_par *fp) {
     //flog("label %i %i %i %s\n", fp->w, fp->x, fp->y, fp->txt);
     break;
   case FT_LINE:
-    f = mk_editable_field_regex_ex(fp->w, fp->x, fp->y, fp->txt, fp->regex, fp->fore, fp->autoskip, fp->static_size, fp->max_growth);
+    f = mk_editable_field_regex_ex(fp->w, fp->x, fp->y, fp->txt, fp->regex, fp->fore, fp->autoskip, fp->static_size, fp->max_growth, fp->active);
     break;
   case FT_SPINNER:
-    f = mk_spinner(fp->w, fp->x, fp->y, fp->txt, fp->iarg, fp->fore);
+    f = mk_spinner(fp->w, fp->x, fp->y, fp->txt, fp->iarg, fp->fore, false);
     break;
   case FT_BUTTON:
     f = mk_button(fp->w, fp->x, fp->y, fp->txt, fp->fore);
@@ -190,7 +197,7 @@ mk_label2(int w, int h, int x, int y, char *string, chtype c) {
 }
 
 FIELD *
-mk_editable_field_regex_ex(int w, int x, int y, char *string, char *regex, chtype c, bool autoskip, bool static_size, int max_growth) {
+mk_editable_field_regex_ex(int w, int x, int y, char *string, char *regex, chtype c, bool autoskip, bool static_size, int max_growth, bool active) {
   FIELD *f = new_field(1, w, y, x, 0, 0);
   set_max_field(f, w);
   set_field_type(f, TYPE_REGEXP, regex);
@@ -206,6 +213,9 @@ mk_editable_field_regex_ex(int w, int x, int y, char *string, char *regex, chtyp
   if (!autoskip) {
     field_opts_off(f, O_AUTOSKIP);
   }
+  if (!active) {
+    field_opts_off(f, O_ACTIVE);
+  }
   set_field_buffer(f, 0, string);
   set_field_fore(f, c);
   set_field_back(f, c);
@@ -214,5 +224,5 @@ mk_editable_field_regex_ex(int w, int x, int y, char *string, char *regex, chtyp
 
 FIELD *
 mk_editable_field_regex(int w, int x, int y, char *string, char *regex, chtype c) {
-  return mk_editable_field_regex_ex(w, x, y, string, regex, c, true, true, 0);
+  return mk_editable_field_regex_ex(w, x, y, string, regex, c, true, true, 0, true);
 }
