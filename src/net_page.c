@@ -275,18 +275,6 @@ set_ip_fields(int first_field, uint8_t v1, uint8_t v2, uint8_t v3, uint8_t v4) {
 }
 
 void
-clear_ip_fields(int first_field) {
-  char buf[] = "   ";
-  set_field_buffer(net_page.fields[first_field], 0, buf);
-  first_field+=2;
-  set_field_buffer(net_page.fields[first_field], 0, buf);
-  first_field+=2;
-  set_field_buffer(net_page.fields[first_field], 0, buf);
-  first_field+=2;
-  set_field_buffer(net_page.fields[first_field], 0, buf);
-}
-
-void
 set_auto_ip(bool automatic) {
   int first = IP_ADDR_VAL1;
   int last = GATEWAY_VAL4;
@@ -471,9 +459,9 @@ init_net_page(void) {
 
   int ret = get_ip_addr(net_page.ip_val, net_page.netmask_val);
   if (ret != 0) {
-    clear_ip_fields(IP_ADDR_VAL1);
-    clear_ip_fields(NETMASK_VAL1);
-    clear_ip_fields(GATEWAY_VAL1);
+    set_ip_fields(IP_ADDR_VAL1, 0, 0, 0, 0);
+    set_ip_fields(NETMASK_VAL1, 0, 0, 0, 0);
+    set_ip_fields(GATEWAY_VAL1, 0, 0, 0, 0);
   } else {
     int v1, v2, v3, v4;
     sscanf(net_page.ip_val, "%i.%i.%i.%i", &v1, &v2, &v3, &v4);
@@ -504,7 +492,7 @@ init_net_page(void) {
     set_ip_fields(DNS1_VAL1, v1, v2, v3, v4);
   } else {
     memset(net_page.dns1_val, 0, NI_MAXHOST+1);
-    clear_ip_fields(DNS1_VAL1);
+    set_ip_fields(DNS1_VAL1, 0, 0, 0, 0);
   }
 
 
