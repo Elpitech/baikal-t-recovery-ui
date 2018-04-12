@@ -11,7 +11,8 @@ CFLAGS += -Wall -I$(CROSS_ROOT)/usr/include -DRECOVERY -DDEBUG -DFRU_DEBUG -D_GN
 #LDFLAGS = -L$(CROSS_ROOT)/usr/lib -lpanelw -lncursesw -ltinfow -lmenuw
 REAL_DEVICES ?= no
 FAKE_SHRED = 0x80000002
-REC_VERSION=$(shell python gsuf/gsuf.py --main-branch master)
+BRANCH?=master
+REC_VERSION=$(shell python gsuf/gsuf.py --main-branch $(BRANCH))
 
 ifeq ($(REAL_DEVICES),yes)
 CFLAGS += -DREAL_DEVICES
