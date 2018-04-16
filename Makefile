@@ -12,7 +12,8 @@ CFLAGS += -Wall -I$(CROSS_ROOT)/usr/include -DRECOVERY -DDEBUG -DFRU_DEBUG -D_GN
 REAL_DEVICES ?= no
 FAKE_SHRED = 0x80000002
 BRANCH?=master
-REC_VERSION=$(shell python gsuf/gsuf.py --main-branch $(BRANCH))
+GSUF_PATH ?= $(shell pwd)/gsuf/
+REC_VERSION = $(shell python $(GSUF_PATH)/gsuf.py --main-branch $(BRANCH))
 
 ifeq ($(REAL_DEVICES),yes)
 CFLAGS += -DREAL_DEVICES
@@ -31,7 +32,7 @@ PROJECT = recovery-ui
 all: $(SOURCES) $(PROJECT)
 
 prepare:
-	if [ ! -e gsuf ]; then git clone https://github.com/snegovick/gsuf.git; fi
+	if [ ! -e $(GSUF_PATH) ]; then git clone https://github.com/snegovick/gsuf.git; fi
 
 $(PROJECT): prepare $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
