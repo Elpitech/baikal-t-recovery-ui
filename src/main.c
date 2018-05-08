@@ -31,6 +31,18 @@ struct fru fru_back;
 void win_show(WINDOW *win, wchar_t *label, int label_color);
 void print_in_middle(WINDOW *win, int starty, int startx, int width, wchar_t *string, chtype color);
 
+int
+mk_recstat(void) {
+  FILE *f = fopen(RECSTAT_PATH, "w");
+  if (f==NULL) {
+    flog("Failed to open %s for writing\n", RECSTAT_PATH);
+    return -1;
+  }
+  fprintf(f, "0\n");
+  fclose(f);
+  return 0;
+}
+
 void
 store(void) {
   int ret;
@@ -180,10 +192,14 @@ int main(void) {
   setvbuf(stderr, NULL, _IONBF, 0);
   switch (pages_params.start) {
   case START_EXT:
-    execl("/bin/ash", "ash", EXT_RECOVERY_PATH, pages_params.ext_recovery_tar_path, pages_params.ext_recovery_mdev, NULL);
+    if (mk_recstat()==0) {
+      execl("/bin/ash", "ash", EXT_RECOVERY_PATH, pages_params.ext_recovery_tar_path, pages_params.ext_recovery_mdev, NULL);
+    }
     break;
   case START_INT:
-    execl("/bin/ash", "ash", INT_RECOVERY_PATH, pages_params.int_recovery_tar_path, pages_params.int_recovery_mdev, NULL);
+    if (mk_recstat()==0) {
+      execl("/bin/ash", "ash", INT_RECOVERY_PATH, pages_params.int_recovery_tar_path, pages_params.int_recovery_mdev, NULL);
+    }
     break;
   case START_ROM_UP:
     execl("/bin/ash", "ash", ROM_UPDATE_SCRIPT_PATH, pages_params.rom_path, NULL);

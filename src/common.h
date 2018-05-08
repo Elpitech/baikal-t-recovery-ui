@@ -26,6 +26,8 @@ extern FILE *logfile;
 #define fdbg(...)
 #endif
 
+#define RECSTAT_PATH             "/var/run/recoveryui/recovery.stat"
+
 #define VAR_PREFIX               "/var/run/recoveryui/"
 #define INT_RECOVERY_PATH        "/var/run/recoveryui/int/recovery.rc"
 #define INT_RECOVERY_TAR_PATH    "/var/run/recoveryui/int/recovery-tar-path"
