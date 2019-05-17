@@ -1,4 +1,4 @@
-#!/bin/ash
+#!/bin/sh
 
 IP=$1
 NM=$2

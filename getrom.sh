@@ -1,4 +1,4 @@
-#!/bin/ash
+#!/bin/sh
 
 VAR_PREFIX=/var/run/recoveryui/
 URL=$1
