@@ -38,6 +38,8 @@
 #elif defined (BOARD_BN1BT1)
 #define GPIOCHIP_GLOB "/sys/bus/i2c/devices/1-0024/gpio/*/base"
 #endif
+#define BMC_VERSION_GLOB "/sys/bus/i2c/drivers/*-bmc/version"
+#define BOOTREASON_GLOB "/sys/bus/i2c/drivers/*-bmc/bootreason"
 
 #define COL1_W (LABEL_WIDTH-2)
 #define COL2_OFF (COL1_W)
@@ -291,30 +293,44 @@ void read_bmc_version(void) {
   struct stat st;
   int ret;
   int reason;
+  glob_t pglob;
   pages_params.bmc_version[0] = 0;
   pages_params.bmc_version[1] = 0;
   pages_params.bmc_version[2] = 0;
   pages_params.boot_reason[0] = 0;
   pages_params.boot_reason[1] = 0;
-  FILE *version = fopen("/sys/bus/i2c/drivers/mitx2-bmc/version", "r");
+  FILE *version;
+
+  if (glob(BMC_VERSION_GLOB, 0, NULL, &pglob)) {
+    ferr("Failed to glob " BMC_VERSION_GLOB "\n");
+    return 0;
+  }
+  version = fopen(pglob.gl_pathv[0], "r");
+
   if (version == NULL) {
-    ferr("Failed to open /sys/bus/i2c/drivers/mitx2-bmc/version\n");
+    ferr("Failed to open %s\n", pglob.gl_pathv[0]);
+    globfree(&pglob);
     return;
   }
+  globfree(&pglob);
   ret = fscanf(version, "%i.%i.%i", &pages_params.bmc_version[0], &pages_params.bmc_version[1], &pages_params.bmc_version[2]);
   fclose(version);
   flog("BMC version read returned %i, value: %i.%i.%i\n", ret, pages_params.bmc_version[0], pages_params.bmc_version[1], pages_params.bmc_version[2]);
   if (pages_params.bmc_version[0] >= 2) {
-    ret = stat("/sys/bus/i2c/drivers/mitx2-bmc/bootreason", &st);
-    if (ret<0) {
-      flog("Failed to stat bmc sysfs bootreason, assuming ancient BMC\n");
-      return;
+    FILE *bootreason;
+
+    if (glob(BOOTREASON_GLOB, 0, NULL, &pglob)) {
+      ferr("Failed to glob " BOOTREASON_GLOB "\n");
+      return 0;
     }
-    FILE *bootreason = fopen("/sys/bus/i2c/drivers/mitx2-bmc/bootreason", "r");
+    bootreason = fopen(pglob.gl_pathv[0], "r");
+
     if (bootreason == NULL) {
-      ferr("Failed to open /sys/bus/i2c/drivers/mitx2-bmc/bootreason\n");
+      ferr("Failed to open %s\n", pglob.gl_pathv[0]);
+      globfree(&pglob);
       return;
     }
+    globfree(&pglob);
     ret = fscanf(bootreason, "%i", &reason);
     fclose(bootreason);
     pages_params.boot_reason[0] = reason & 0xff;
