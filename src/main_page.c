@@ -13,6 +13,7 @@
 #include <linux/rtc.h>
 #include <time.h>
 #include <fcntl.h>
+#include <glob.h>
 
 #include "common.h"
 #include "pages.h"
@@ -24,7 +25,6 @@
 
 #define TAG "MAIN_PAGE"
 
-#define SHRED_GPIO_BASE 32
 #define SHRED_NGPIO 8
 
 #define LABEL_WIDTH 25
@@ -32,6 +32,12 @@
 #define SYS_TEMP_PATH "/sys/bus/platform/drivers/pvt-hwmon/1f200000.pvt/temp1_input"
 #define SYS_COREV_PATH "/sys/bus/platform/drivers/pvt-hwmon/1f200000.pvt/in1_input"
 #define PROC_OSRELEASE_PATH "/proc/sys/kernel/osrelease"
+
+#if defined(BOARD_MITX4)
+#define GPIOCHIP_GLOB "/sys/bus/i2c/devices/1-0021/gpio/*/base"
+#elif defined (BOARD_BN1BT1)
+#define GPIOCHIP_GLOB "/sys/bus/i2c/devices/1-0024/gpio/*/base"
+#endif
 
 #define COL1_W (LABEL_WIDTH-2)
 #define COL2_OFF (COL1_W)
@@ -235,6 +241,22 @@ uint32_t read_shred(void) {
   uint32_t shred_val = 0;
   int i = 0;
   char buf[64] = {0};
+  glob_t pglob;
+  FILE *fchip;
+  int gpio_base;
+
+  if (glob(GPIOCHIP_GLOB, 0, NULL, &pglob)) {
+    ferr("Failed to glob " GPIOCHIP_GLOB "\n");
+    return 0;
+  }
+  fchip = fopen(pglob.gl_pathv[0], "r");
+  if (!fchip) {
+    ferr("Failed to open %s\n", pglob.gl_pathv[0]);
+    globfree(&pglob);
+    return 0;
+  }
+  globfree(&pglob);
+  fscanf(fchip, "%d", &gpio_base);
   for (i=0;i<SHRED_NGPIO;i++) {
     flog("Opening /sys/class/gpio/export\n");
     FILE *export = fopen("/sys/class/gpio/export", "w");
@@ -242,11 +264,11 @@ uint32_t read_shred(void) {
       ferr("Failed to open /sys/class/gpio/export\n");
       return val;
     }
-    ret = sprintf(buf, "%i", i+SHRED_GPIO_BASE);
+    ret = sprintf(buf, "%i", i+gpio_base);
     flog("Exporting pin %s[len: %i]\n", buf, ret);
     fwrite(buf, sizeof(char), ret, export);
     fclose(export);
-    sprintf(buf, "/sys/class/gpio/gpio%i/value", i+SHRED_GPIO_BASE);
+    sprintf(buf, "/sys/class/gpio/gpio%i/value", i+gpio_base);
     flog("Opening %s\n", buf);
     FILE *gpio = fopen(buf, "r");
     if (gpio == NULL) {
@@ -255,7 +277,7 @@ uint32_t read_shred(void) {
       return shred_val;
     }
     ret = fscanf(gpio, "%i", &val);
-    flog("gpio[%i] read returned %i, value: %i\n", i+SHRED_GPIO_BASE, ret, val);
+    flog("gpio[%i] read returned %i, value: %i\n", i+gpio_base, ret, val);
     shred_val |= (val!=0?(1<<i):0);
     fclose(gpio);
   }
