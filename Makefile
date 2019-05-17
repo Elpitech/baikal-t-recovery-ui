@@ -1,55 +1,43 @@
-CROSS_COMPILE ?=
-CROSS_ROOT?=
-PREFIX ?= .
-BOARD ?= mitx4
-VALID_BOARDS=mitx4
+bindir ?= /usr/bin
+
 ifeq ($(BOARD), mitx4)
 	CFLAGS += -DBOARD_MITX4
 endif
-CC = $(CROSS_COMPILE)gcc
-CFLAGS += -Wall -I$(CROSS_ROOT)/usr/include -DRECOVERY -DDEBUG -DFRU_DEBUG -D_GNU_SOURCE
-#LDFLAGS = -L$(CROSS_ROOT)/usr/lib -lpanelw -lncursesw -ltinfow -lmenuw
-REAL_DEVICES ?= no
-FAKE_SHRED = 0x80000002
-BRANCH?=master
-GSUF_PATH ?= $(shell pwd)/gsuf/
-REC_VERSION = $(shell python $(GSUF_PATH)/gsuf.py --main-branch $(BRANCH))
+ifeq ($(BOARD), bn1bt1)
+	CFLAGS += -DBOARD_BN1BT1
+endif
+REC_VERSION ?= 1.5
+CFLAGS += -Wall -DRECOVERY -DDEBUG -DFRU_DEBUG -D_GNU_SOURCE
+LDFLAGS = -lformw -lpanelw -lmenuw -lncursesw -ltinfo
 
-ifeq ($(REAL_DEVICES),yes)
-CFLAGS += -DREAL_DEVICES
-LDFLAGS = -L$(CROSS_ROOT)/usr/lib -lformw -lpanelw -lmenuw -lncursesw -ltinfow
+FAKE_SHRED = 0x80000002
+ifneq ($(BOARD),)
+	CFLAGS += -DREAL_DEVICES
 else
-CFLAGS += -DFAKE_SHRED=$(FAKE_SHRED)
-LDFLAGS = -L$(CROSS_ROOT)/lib/x86_64-linux-gnu/ -lformw -lpanelw -lmenuw -lncursesw
+	CFLAGS += -DFAKE_SHRED=$(FAKE_SHRED)
 endif
 
 CFLAGS += -D_XOPEN_SOURCE_EXTENDED -D_FILE_OFFSET_BITS=64 -DREC_VERSION="$(REC_VERSION)"
-CFLAFS += -D_GNU_SOURCE -D_DEFAULT_SOURCE -I/usr/include/ncursesw
-SOURCES = src/main.c src/top_menu.c src/main_page.c src/boot_page.c src/net_page.c src/recovery_page.c src/fru.c src/field_utils.c
+CFLAFS += -D_GNU_SOURCE -D_DEFAULT_SOURCE
+SOURCES = src/main.c src/top_menu.c src/main_page.c src/boot_page.c src/net_page.c src/recovery_page.c src/field_utils.c src/fru.c
 OBJECTS = $(patsubst %.c, %.o, $(SOURCES))
 PROJECT = recovery-ui
 
 all: $(SOURCES) $(PROJECT)
 
-prepare:
-	if [ ! -e $(GSUF_PATH) ]; then git clone https://github.com/snegovick/gsuf.git; fi
-
-$(PROJECT): prepare $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+$(PROJECT): $(OBJECTS)
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 
 %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 .PHONY: clean
 clean:
-	-rm $(OBJECTS) $(PROJECT)
+	-rm -f $(OBJECTS) $(PROJECT)
 
 .PHONY: install
 install:
-ifneq ($(PREFIX),.)
-	cp $(PROJECT) $(PREFIX)
-	cp getrom.sh $(PREFIX)
-	chmod +x $(PREFIX)/getrom.sh
-	cp netconf.sh $(PREFIX)
-	chmod +x $(PREFIX)/netconf.sh
-endif
+	install -d -D -m 755 ${DESTDIR}${bindir}
+	install -m 755 $(PROJECT) ${DESTDIR}${bindir}
+	install -m 755 getrom.sh ${DESTDIR}${bindir}
+	install -m 755 netconf.sh ${DESTDIR}${bindir}
