@@ -219,8 +219,8 @@ static struct {
   char voltage_label[20];
   char mfg_date_label[20];
   char bmc_version_label[20];
-  char rfs_version[20];
-  char kernel_release[20];
+  char rfs_version[21];
+  char kernel_release[21];
   char year_val[5];
   char month_val[3];
   char day_val[3];
