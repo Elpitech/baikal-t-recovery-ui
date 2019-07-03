@@ -48,7 +48,7 @@ static struct {
 
 void
 init_top_menu(struct window_params *main, struct window_params *boot, struct window_params *net, struct window_params *rec) {
-  const char header[] = "T-Platforms mITX recovery";
+  const char header[] = "T-Platforms Service Mode";
   top_menu.w = newwin(TOP_MENU_H, TOP_MENU_W, 0, 0);
   wbkgd(top_menu.w, BG_COLOR);
 
@@ -87,7 +87,7 @@ init_top_menu(struct window_params *main, struct window_params *boot, struct win
   set_menu_back(top_menu.m, BG_COLOR);
 
   mvwaddstr(top_menu.w, 0, TOP_MENU_W/2-strlen(header)/2, header);
-  mvwaddstr(top_menu.w, 0, TOP_MENU_W-strlen(xstr(REC_VERSION)), xstr(REC_VERSION));
+//  mvwaddstr(top_menu.w, 0, TOP_MENU_W-strlen(xstr(REC_VERSION)), xstr(REC_VERSION));
 
   top_menu.bottom_w = newwin(1, TOP_MENU_W, LINES-1, 0);
   wbkgd(top_menu.bottom_w, BG_COLOR);

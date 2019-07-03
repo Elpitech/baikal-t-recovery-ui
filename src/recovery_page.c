@@ -24,7 +24,7 @@
 #define TAG "RECOVERY_PAGE"
 //                           |                         |
 #define EXT_REC_TXT_NOTFOUND "        Not found"
-#define EXT_REC_TXT_FOUND    "          Start"
+#define EXT_REC_TXT_FOUND    "     Start from USB"
 #define INT_REC_TXT_NOTFOUND "        Not found"
 #define INT_REC_TXT_FOUND    "          Start"
 #define ROM_NOTFOUND         "        Not found"
@@ -60,7 +60,7 @@ enum fields {
 };
 
 static struct field_par fp[] = {
-  [EXT_RECOVERY_LABEL] = LABEL_PAR(0, 0, COL1_W, "USB recovery", PAGE_COLOR, PAGE_COLOR),
+  [EXT_RECOVERY_LABEL] = LABEL_PAR(0, 0, COL1_W, "Update OS", PAGE_COLOR, PAGE_COLOR),
   [EXT_RECOVERY_BTN] = BUTTON_PAR(COL2_OFF, 0, COL2_W, EXT_REC_TXT_NOTFOUND, BG_COLOR, BG_COLOR),
   
   [INT_RECOVERY_LABEL] = LABEL_PAR(0, 2, COL1_W, "Restore backup", PAGE_COLOR, PAGE_COLOR),
