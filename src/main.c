@@ -1,5 +1,4 @@
 #include <unistd.h>
-#include <sys/reboot.h>
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -228,7 +227,7 @@ int main(void) {
     sync();
   }
   sync();
-  reboot(RB_AUTOBOOT);
+  execl("/sbin/poweroff", "poweroff", NULL);
 
 	return 0;
 }
